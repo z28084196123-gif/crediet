@@ -28,7 +28,7 @@ create table public.profiles (
   updated_at       timestamptz not null default now()
 );
 
--- 督導/組長 ↔ 技師。ends_on 為 null 表示目前有效。
+-- 督導/組長 ↔ 技師。ends_on 為 null 表示目前有效;ends_on 當天起即失效。
 create table public.mentor_assignments (
   id            uuid primary key default gen_random_uuid(),
   mentor_id     uuid not null references public.profiles(id) on delete cascade,
@@ -88,7 +88,7 @@ language sql stable security definer set search_path = public as $$
   select exists (
     select 1 from public.mentor_assignments
     where mentor_id = auth.uid() and technician_id = tech
-      and starts_on <= current_date and (ends_on is null or ends_on >= current_date)
+      and starts_on <= current_date and (ends_on is null or ends_on > current_date)  -- ends_on 當天起失效
   )
 $$;
 
