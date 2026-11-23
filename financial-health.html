@@ -1,0 +1,632 @@
+<title>公司財務健檢表</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap">
+<style>
+/* Layout: lab-report metaphor. Left = 填寫財報 (specimen), right = 檢驗報告 with reference ranges and flags. */
+:root {
+  --bg: #f3f5f7;
+  --paper: #ffffff;
+  --ink: #17212b;
+  --muted: #5d6b78;
+  --line: #d9e0e6;
+  --soft: #eaeef2;
+  --accent: #1d5b8f;
+  --accent-soft: #e3edf6;
+  --good: #23824f;
+  --good-soft: #e2f2e8;
+  --warn: #b26a00;
+  --warn-soft: #fbefd9;
+  --risk: #c2362f;
+  --risk-soft: #fbe3e1;
+  --f-display: "Noto Serif TC", "Songti TC", serif;
+  --f-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --paper: #161e26; --ink: #e4eaf0; --muted: #93a2b0; --line: #2a3642; --soft: #1d2731;
+    --accent: #6fa8dc; --accent-soft: #1a2d40;
+    --good: #5cc48a; --good-soft: #15301f; --warn: #e6a23c; --warn-soft: #33270f; --risk: #f07068; --risk-soft: #3a1a18;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --paper: #161e26; --ink: #e4eaf0; --muted: #93a2b0; --line: #2a3642; --soft: #1d2731;
+  --accent: #6fa8dc; --accent-soft: #1a2d40;
+  --good: #5cc48a; --good-soft: #15301f; --warn: #e6a23c; --warn-soft: #33270f; --risk: #f07068; --risk-soft: #3a1a18;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 24px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-family: var(--f-display); font-weight: 900; font-size: clamp(1.7rem, 3.5vw, 2.3rem); letter-spacing: .02em; }
+h2 { font-family: var(--f-display); font-weight: 600; font-size: 1.25rem; }
+h3 { font-size: 1rem; font-weight: 700; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: .75rem; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; font-weight: 500; }
+.muted { color: var(--muted); }
+header.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px 24px; border-bottom: 2px solid var(--ink); padding-bottom: 14px; }
+header.top p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
+.meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: .82rem; color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 500; }
+.meta input { font: inherit; color: var(--ink); background: transparent; border: none; border-bottom: 1px dashed var(--line); padding: 0; width: 11em; }
+
+.layout { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; }
+.inputs { padding: 18px; display: grid; gap: 16px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; }
+@media (max-width: 900px) { .inputs { position: static; max-height: none; } }
+.inputs .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sample-note { font-size: .8rem; background: var(--warn-soft); color: var(--warn); padding: 6px 10px; border-radius: 4px; }
+fieldset { border: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+legend { font-weight: 700; font-size: .9rem; padding: 0 0 6px; border-bottom: 1px solid var(--line); width: 100%; margin-bottom: 4px; }
+.field { display: grid; grid-template-columns: minmax(0, 1fr) 128px; gap: 8px; align-items: center; }
+.field label { font-size: .88rem; }
+.field label small { display: block; color: var(--muted); font-size: .72rem; line-height: 1.3; }
+.field input { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: .9rem; text-align: right; width: 100%;
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); }
+.field input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+.derived { display: flex; justify-content: space-between; font-size: .82rem; color: var(--muted); padding: 2px 0; }
+.derived span:last-child { font-family: var(--f-num); color: var(--ink); }
+.check { font-size: .8rem; padding: 6px 10px; border-radius: 4px; }
+.check.ok { background: var(--good-soft); color: var(--good); }
+.check.bad { background: var(--risk-soft); color: var(--risk); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+button { font: inherit; font-size: .85rem; padding: 7px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; }
+button:hover { border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+button.primary:hover { filter: brightness(1.1); color: var(--paper); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.results { display: grid; gap: 24px; min-width: 0; }
+.summary { padding: 22px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 24px; align-items: center; }
+@media (max-width: 720px) { .summary { grid-template-columns: minmax(0, 1fr); justify-items: start; } }
+.grade { width: 132px; height: 132px; border-radius: 50%; display: grid; place-items: center; text-align: center; position: relative; }
+.grade svg { position: absolute; inset: 0; }
+.grade .score { font-family: var(--f-num); font-size: 2.1rem; font-weight: 600; line-height: 1; }
+.grade .letter { font-family: var(--f-display); font-weight: 900; font-size: .95rem; margin-top: 4px; }
+.verdict h2 { font-size: 1.45rem; }
+.verdict p { margin: 8px 0 0; max-width: 60ch; }
+.counts { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 500; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.risk { background: var(--risk-soft); color: var(--risk); }
+.pill.na { background: var(--soft); color: var(--muted); }
+#radar { width: 250px; max-width: 100%; height: auto; }
+
+.dims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .dims { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dim { padding: 14px; border-top: 4px solid var(--soft); }
+.dim.good { border-top-color: var(--good); } .dim.warn { border-top-color: var(--warn); } .dim.risk { border-top-color: var(--risk); }
+.dim .s { font-family: var(--f-num); font-size: 1.6rem; font-weight: 600; }
+.dim .q { font-size: .78rem; color: var(--muted); line-height: 1.4; }
+
+.section { padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.section > .h { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: .88rem; }
+th { text-align: left; font-weight: 500; font-size: .74rem; letter-spacing: .08em; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--ink); }
+td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr.grp td { background: var(--soft); font-weight: 700; font-size: .82rem; padding: 6px 8px; }
+tr.grp td .num { font-weight: 500; color: var(--muted); }
+td.val { font-family: var(--f-num); font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; white-space: nowrap; }
+td.ref { font-family: var(--f-num); font-size: .8rem; color: var(--muted); white-space: nowrap; }
+td .f { font-size: .74rem; color: var(--muted); }
+.bar { position: relative; height: 8px; border-radius: 4px; width: 140px; overflow: hidden; display: flex; }
+.bar i { display: block; height: 100%; }
+.bar b { position: absolute; top: -3px; width: 3px; height: 14px; background: var(--ink); border-radius: 1px; }
+.barbox { position: relative; padding: 3px 0; }
+
+.actions { display: grid; gap: 10px; }
+.act { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; padding: 12px 14px; border-radius: 4px; background: var(--bg); border-left: 4px solid var(--warn); }
+.act.risk { border-left-color: var(--risk); }
+.act .n { font-family: var(--f-num); font-weight: 600; color: var(--muted); }
+.act p { margin: 4px 0 0; font-size: .9rem; }
+.strengths { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+.dupont { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .85rem; }
+.dupont .box { border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; text-align: center; min-width: 96px; }
+.dupont .box .v { font-family: var(--f-num); font-weight: 600; font-size: 1.1rem; }
+.dupont .box.main { border-color: var(--accent); background: var(--accent-soft); }
+.dupont .op { font-family: var(--f-num); color: var(--muted); }
+.zscale { position: relative; height: 10px; display: flex; border-radius: 5px; overflow: hidden; margin: 22px 0 6px; }
+.zscale i { height: 100%; }
+.zwrap { position: relative; }
+.zmark { position: absolute; top: -4px; transform: translateX(-50%); font-family: var(--f-num); font-size: .78rem; font-weight: 600; }
+.zmark::after { content: ""; display: block; width: 2px; height: 30px; background: var(--ink); margin: 0 auto; }
+.zlabels { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); font-family: var(--f-num); }
+
+.practice { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.practice div { font-size: .88rem; }
+.practice h3 { margin-bottom: 4px; color: var(--accent); }
+.practice p { margin: 0; }
+.foot { font-size: .78rem; color: var(--muted); max-width: 90ch; }
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 16px; border-radius: 4px; font-size: .85rem; }
+textarea#copybox { width: 100%; height: 120px; font-family: var(--f-num); font-size: .78rem; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
+@media (prefers-reduced-motion: no-preference) { .bar b, .zmark { transition: left .3s ease; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Financial Health Check · 財務健檢</div>
+      <h1>公司財務健檢表</h1>
+      <p>依照大型企業財務部與銀行授信常用的六大構面，把三大報表的數字換算成 21 項指標，對照參考範圍標出異常，並排出優先改善順序。</p>
+    </div>
+    <div class="meta">
+      <span>公司</span><b><input id="m-co" value="範例製造股份有限公司" aria-label="公司名稱"></b>
+      <span>期間</span><b><input id="m-period" value="2025 年度" aria-label="報表期間"></b>
+      <span>單位</span><b>新台幣千元</b>
+    </div>
+  </header>
+
+  <div class="layout">
+    <form class="panel inputs" id="form" autocomplete="off">
+      <div class="head">
+        <h2>填寫財報數字</h2>
+        <div class="btns">
+          <button type="button" id="btn-sample">載入範例</button>
+          <button type="button" id="btn-clear">清空</button>
+        </div>
+      </div>
+      <div class="sample-note" id="sample-note">目前顯示的是虛構範例數字，請換成貴公司的財報。輸入會自動存在這台裝置的瀏覽器。</div>
+
+      <fieldset>
+        <legend>損益表（本期）</legend>
+        <div class="field"><label for="rev">營業收入</label><input id="rev" inputmode="decimal"></div>
+        <div class="field"><label for="cogs">營業成本</label><input id="cogs" inputmode="decimal"></div>
+        <div class="field"><label for="opex">營業費用<small>推銷＋管理＋研發</small></label><input id="opex" inputmode="decimal"></div>
+        <div class="field"><label for="da">折舊及攤銷<small>已含在成本與費用中</small></label><input id="da" inputmode="decimal"></div>
+        <div class="field"><label for="int">利息費用</label><input id="int" inputmode="decimal"></div>
+        <div class="field"><label for="oth">業外收支淨額<small>收益為正、損失為負</small></label><input id="oth" inputmode="decimal"></div>
+        <div class="field"><label for="tax">所得稅費用</label><input id="tax" inputmode="decimal"></div>
+        <div class="derived"><span>營業利益（EBIT）</span><span id="d-ebit">—</span></div>
+        <div class="derived"><span>稅後淨利</span><span id="d-ni">—</span></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>資產負債表（期末）</legend>
+        <div class="field"><label for="cash">現金及約當現金</label><input id="cash" inputmode="decimal"></div>
+        <div class="field"><label for="ar">應收帳款及票據</label><input id="ar" inputmode="decimal"></div>
+        <div class="field"><label for="inv">存貨</label><input id="inv" inputmode="decimal"></div>
+        <div class="field"><label for="oca">其他流動資產</label><input id="oca" inputmode="decimal"></div>
+        <div class="field"><label for="nca">非流動資產<small>廠房設備、投資等</small></label><input id="nca" inputmode="decimal"></div>
+        <div class="field"><label for="ap">應付帳款及票據</label><input id="ap" inputmode="decimal"></div>
+        <div class="field"><label for="std">短期借款<small>含一年內到期長期借款</small></label><input id="std" inputmode="decimal"></div>
+        <div class="field"><label for="ocl">其他流動負債</label><input id="ocl" inputmode="decimal"></div>
+        <div class="field"><label for="ltd">長期借款</label><input id="ltd" inputmode="decimal"></div>
+        <div class="field"><label for="oncl">其他非流動負債</label><input id="oncl" inputmode="decimal"></div>
+        <div class="field"><label for="re">保留盈餘</label><input id="re" inputmode="decimal"></div>
+        <div class="derived"><span>資產總額</span><span id="d-ta">—</span></div>
+        <div class="derived"><span>負債總額</span><span id="d-tl">—</span></div>
+        <div class="derived"><span>股東權益（資產 − 負債）</span><span id="d-eq">—</span></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>現金流量表（本期）</legend>
+        <div class="field"><label for="ocf">營業活動淨現金流</label><input id="ocf" inputmode="decimal"></div>
+        <div class="field"><label for="capex">資本支出<small>購置不動產、廠房及設備</small></label><input id="capex" inputmode="decimal"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>上期數字（算成長率）</legend>
+        <div class="field"><label for="prev">上期營業收入</label><input id="prev" inputmode="decimal"></div>
+        <div class="field"><label for="pni">上期稅後淨利</label><input id="pni" inputmode="decimal"></div>
+      </fieldset>
+
+      <div class="check" id="check"></div>
+    </form>
+
+    <main class="results">
+      <section class="panel summary" aria-live="polite">
+        <div class="grade" id="grade"></div>
+        <div class="verdict">
+          <div class="eyebrow">綜合判定</div>
+          <h2 id="verdict-title">—</h2>
+          <p id="verdict-text"></p>
+          <div class="counts" id="counts"></div>
+        </div>
+        <svg id="radar" viewBox="-20 0 300 240" role="img" aria-label="六大構面雷達圖"></svg>
+      </section>
+
+      <div class="dims" id="dims"></div>
+
+      <section class="panel section">
+        <div class="h"><h2>優先改善事項</h2><span class="muted" style="font-size:.82rem">依嚴重度與構面權重排序</span></div>
+        <div class="actions" id="actions"></div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:6px">表現良好</div>
+          <div class="strengths" id="strengths"></div>
+        </div>
+      </section>
+
+      <section class="panel section">
+        <div class="h"><h2>檢驗明細</h2>
+          <div class="counts" style="margin:0">
+            <span class="pill good">● 正常</span><span class="pill warn">● 留意</span><span class="pill risk">● 異常</span>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>指標</th><th style="text-align:right">本期數值</th><th>位置</th><th>參考範圍</th><th>判定</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="two">
+        <section class="panel section">
+          <div class="h"><h2>杜邦分析</h2><span class="muted" style="font-size:.82rem">ROE 從哪裡來</span></div>
+          <div class="dupont" id="dupont"></div>
+          <p class="muted" style="margin:0;font-size:.85rem" id="dupont-note"></p>
+        </section>
+        <section class="panel section">
+          <div class="h"><h2>Altman Z″ 破產預警</h2><span class="muted" style="font-size:.82rem">適用未上市與非製造業</span></div>
+          <div class="zwrap">
+            <div class="zmark" id="zmark">—</div>
+            <div class="zscale"><i style="width:22%;background:var(--risk)"></i><i style="width:30%;background:var(--warn)"></i><i style="width:48%;background:var(--good)"></i></div>
+            <div class="zlabels"><span>0</span><span>1.1</span><span>2.6</span><span>5+</span></div>
+          </div>
+          <p class="muted" style="margin:0;font-size:.85rem" id="z-note"></p>
+        </section>
+      </div>
+
+      <section class="panel section">
+        <div class="h"><h2>大型企業怎麼做財務健檢</h2></div>
+        <div class="practice">
+          <div><h3>1. 固定構面、固定頻率</h3><p>財務長每月看同一套指標：流動性、槓桿、獲利、營運效率、現金流、成長。指標固定，才看得出趨勢。季度送董事會，年度對照預算。</p></div>
+          <div><h3>2. 設紅綠燈門檻</h3><p>每項指標事先定好「正常／留意／異常」界線，通常參考銀行授信條件（例如淨負債／EBITDA 不超過 3 倍、利息保障倍數至少 3 倍）。跨線就要有負責人說明原因。</p></div>
+          <div><h3>3. 現金優先於獲利</h3><p>大企業最看重營業現金流與自由現金流，並滾動編製 13 週現金流預測。帳上賺錢但收不到現金，是中小企業倒閉最常見的原因。</p></div>
+          <div><h3>4. 拆解到根因</h3><p>ROE 下滑時用杜邦分析拆成利潤率、週轉率、槓桿三段，再往下拆到產品、客戶、部門。數字只是症狀，要追到營運動作。</p></div>
+          <div><h3>5. 跟同業比</h3><p>毛利率、存貨天數差異很大，零售和半導體的「正常值」完全不同。本表的參考範圍是一般製造與服務業的通用值，請再對照同業上市公司財報調整。</p></div>
+          <div><h3>6. 轉成行動清單</h3><p>每個紅燈對應一位負責人、一個改善目標和期限，下個月追蹤。健檢表的價值在於推動改善，不在報告本身。</p></div>
+        </div>
+      </section>
+
+      <section class="panel section">
+        <div class="h"><h2>匯出診斷摘要</h2><button type="button" class="primary" id="btn-copy">複製文字摘要</button></div>
+        <textarea id="copybox" readonly aria-label="診斷摘要文字"></textarea>
+      </section>
+
+      <p class="foot">說明：參考範圍為一般性經驗值，不同產業差異大，僅供初步診斷，不構成投資或授信建議。期末餘額近似平均餘額計算週轉天數；若期初與期末差異大，請以平均值填入。Altman Z″ 採 1995 年非製造業／新興市場版本，以帳面淨值取代市值。</p>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+  const FIELDS = ["rev","cogs","opex","da","int","oth","tax","cash","ar","inv","oca","nca","ap","std","ocl","ltd","oncl","re","ocf","capex","prev","pni"];
+  const SAMPLE = { rev:120000, cogs:90000, opex:22000, da:3000, int:2400, oth:0, tax:1000,
+    cash:6000, ar:28000, inv:22000, oca:2000, nca:45000, ap:12000, std:18000, ocl:5000, ltd:20000, oncl:3000, re:15000,
+    ocf:3500, capex:5000, prev:110000, pni:5200 };
+  const META_SAMPLE = { co: "範例製造股份有限公司", period: "2025 年度" };
+  const KEY = "fin-health-v1";
+
+  const DIMS = [
+    { id:"liq",  name:"流動性",   q:"一年內還得出錢嗎？", w:20 },
+    { id:"sol",  name:"財務槓桿", q:"負債壓力有多大？",   w:20 },
+    { id:"prof", name:"獲利能力", q:"生意本身賺不賺錢？", w:20 },
+    { id:"eff",  name:"營運效率", q:"錢卡在應收和存貨多久？", w:15 },
+    { id:"cash", name:"現金流品質", q:"利潤有變成現金嗎？", w:15 },
+    { id:"grow", name:"成長性",   q:"規模和獲利在擴大嗎？", w:10 },
+  ];
+
+  // dir: 1 = higher is better, -1 = lower is better. lo/hi: scale for the range bar.
+  const METRICS = [
+    { id:"cur", dim:"liq", name:"流動比率", f:"流動資產 ÷ 流動負債", u:"x", dir:1, good:1.5, warn:1.0, lo:0, hi:3,
+      fix:"把短期借款轉成中長期借款，並加速收款、去化存貨，提高一年內的償債能力。" },
+    { id:"quick", dim:"liq", name:"速動比率", f:"(現金 + 應收) ÷ 流動負債", u:"x", dir:1, good:1.0, warn:0.7, lo:0, hi:2,
+      fix:"償債太依賴存貨變現。降低存貨水位，把資金轉回現金與應收。" },
+    { id:"cashr", dim:"liq", name:"現金比率", f:"現金 ÷ 流動負債", u:"x", dir:1, good:0.3, warn:0.15, lo:0, hi:0.8,
+      fix:"訂出最低現金水位（例如 1–2 個月付現成本），並向銀行預先取得未動用額度。" },
+    { id:"runway", dim:"liq", name:"現金可支應月數", f:"現金 ÷ 每月付現成本", u:"月", dir:1, good:3, warn:1, lo:0, hi:6,
+      fix:"立即建立 13 週現金流預測，逐週追蹤收付；暫緩非必要支出，洽談備用信用額度。" },
+    { id:"debt", dim:"sol", name:"負債比率", f:"負債總額 ÷ 資產總額", u:"%", dir:-1, good:50, warn:70, lo:0, hi:100,
+      fix:"控制新增借款，以保留盈餘或增資降低槓桿；檢視閒置資產是否可處分還債。" },
+    { id:"nde", dim:"sol", name:"淨負債 ÷ EBITDA", f:"(借款 − 現金) ÷ EBITDA", u:"x", dir:-1, good:2, warn:3.5, lo:-1, hi:6,
+      fix:"銀行通常以 3–3.5 倍為警戒線。優先用自由現金流還本，避免以新債養舊債。" },
+    { id:"icr", dim:"sol", name:"利息保障倍數", f:"EBIT ÷ 利息費用", u:"x", dir:1, good:5, warn:2, lo:0, hi:10,
+      fix:"獲利不足以安心付息。和銀行重議利率、優先償還高利率借款。" },
+    { id:"gm", dim:"prof", name:"毛利率", f:"(營收 − 營業成本) ÷ 營收", u:"%", dir:1, good:30, warn:15, lo:0, hi:60,
+      fix:"做產品別與客戶別毛利分析，調價或淘汰低毛利品項，並與供應商重新議價。" },
+    { id:"om", dim:"prof", name:"營業利益率", f:"EBIT ÷ 營收", u:"%", dir:1, good:10, warn:3, lo:-5, hi:25,
+      fix:"費用率偏高。導入部門預算控管，逐項檢視人力、租金、行銷的投入產出。" },
+    { id:"nm", dim:"prof", name:"淨利率", f:"稅後淨利 ÷ 營收", u:"%", dir:1, good:5, warn:0, lo:-10, hi:20,
+      fix:"檢查利息與業外損失對淨利的侵蝕，必要時降低負債或處理虧損轉投資。" },
+    { id:"roe", dim:"prof", name:"股東權益報酬率 ROE", f:"稅後淨利 ÷ 股東權益", u:"%", dir:1, good:15, warn:8, lo:-10, hi:30,
+      fix:"用下方杜邦分析找出拖累來源：利潤率、資產週轉率或財務槓桿。" },
+    { id:"roa", dim:"prof", name:"資產報酬率 ROA", f:"稅後淨利 ÷ 資產總額", u:"%", dir:1, good:5, warn:2, lo:-5, hi:15,
+      fix:"資產沒有創造足夠獲利。盤點低效資產（閒置設備、呆滯存貨），處分或活化。" },
+    { id:"dso", dim:"eff", name:"應收帳款天數 DSO", f:"應收 ÷ 營收 × 365", u:"天", dir:-1, good:60, warn:90, lo:0, hi:150,
+      fix:"收款太慢。做帳齡分析、收緊客戶信用額度、建立逾期催收流程，可提供提早付款折扣。" },
+    { id:"dio", dim:"eff", name:"存貨天數 DIO", f:"存貨 ÷ 營業成本 × 365", u:"天", dir:-1, good:60, warn:120, lo:0, hi:180,
+      fix:"存貨太多。做 ABC 分類、清理呆滯料，改善需求預測並重設安全庫存。" },
+    { id:"ccc", dim:"eff", name:"現金轉換週期 CCC", f:"DSO + DIO − DPO", u:"天", dir:-1, good:60, warn:120, lo:-30, hi:200,
+      fix:"營運很吃資金。同時從收款、存貨、付款三端下手，在不傷害供應商關係下爭取較長付款條件。" },
+    { id:"ato", dim:"eff", name:"總資產週轉率", f:"營收 ÷ 資產總額", u:"x", dir:1, good:1.0, warn:0.5, lo:0, hi:2,
+      fix:"資產規模相對營收過大。檢視產能利用率，考慮外包或出售低使用率資產。" },
+    { id:"ocfni", dim:"cash", name:"盈餘現金含量", f:"營業現金流 ÷ 稅後淨利", u:"x", dir:1, good:1.0, warn:0.8, lo:0, hi:2,
+      fix:"帳上賺錢但現金沒進來。追查應收與存貨的增加，並確認收入認列時點是否過早。" },
+    { id:"ocfm", dim:"cash", name:"營業現金流量率", f:"營業現金流 ÷ 營收", u:"%", dir:1, good:8, warn:3, lo:-5, hi:20,
+      fix:"每 100 元營收帶進的現金太少。改善收款條件與毛利，現金流才會跟上。" },
+    { id:"fcfm", dim:"cash", name:"自由現金流率", f:"(營業現金流 − 資本支出) ÷ 營收", u:"%", dir:1, good:5, warn:0, lo:-10, hi:15,
+      fix:"投資支出超過營運產生的現金，缺口要靠借款補。依回收期排序資本支出，延後非必要投資。" },
+    { id:"revg", dim:"grow", name:"營收成長率", f:"(本期 − 上期) ÷ 上期營收", u:"%", dir:1, good:10, warn:0, lo:-20, hi:30,
+      fix:"營收停滯或衰退。拆解價格、數量、客戶組合的變化，找出流失的客戶或產品線。" },
+    { id:"nig", dim:"grow", name:"淨利成長率", f:"(本期 − 上期) ÷ |上期淨利|", u:"%", dir:1, good:10, warn:0, lo:-50, hi:50,
+      fix:"淨利成長落後營收，代表成本或費用增加得比營收快。逐項比較兩期的成本結構。" },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n, d = 0) => (n == null || !isFinite(n)) ? "—" : n.toLocaleString("zh-TW", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const num = (v) => { const x = parseFloat(String(v).replace(/[,\s]/g, "")); return isFinite(x) ? x : 0; };
+  const div = (a, b) => (b === 0 || !isFinite(a) || !isFinite(b)) ? null : a / b;
+
+  function read() { const o = {}; FIELDS.forEach(k => o[k] = num($(k).value)); return o; }
+  function write(o) { FIELDS.forEach(k => $(k).value = (o[k] == null || o[k] === "") ? "" : fmt(o[k])); }
+
+  function compute(x) {
+    const gp = x.rev - x.cogs;
+    const ebit = gp - x.opex;
+    const ebitda = ebit + x.da;
+    const ni = ebit - x.int + x.oth - x.tax;
+    const ca = x.cash + x.ar + x.inv + x.oca;
+    const ta = ca + x.nca;
+    const cl = x.ap + x.std + x.ocl;
+    const tl = cl + x.ltd + x.oncl;
+    const eq = ta - tl;
+    const debt = x.std + x.ltd;
+    const cashCost = x.cogs + x.opex - x.da;
+    const dso = div(x.ar, x.rev) != null ? x.ar / x.rev * 365 : null;
+    const dio = div(x.inv, x.cogs) != null ? x.inv / x.cogs * 365 : null;
+    const dpo = div(x.ap, x.cogs) != null ? x.ap / x.cogs * 365 : null;
+    const pct = (v) => v == null ? null : v * 100;
+    const v = {
+      cur: div(ca, cl), quick: div(x.cash + x.ar, cl), cashr: div(x.cash, cl),
+      runway: cashCost > 0 ? x.cash / (cashCost / 12) : null,
+      debt: pct(div(tl, ta)),
+      nde: ebitda > 0 ? (debt - x.cash) / ebitda : (debt - x.cash <= 0 ? -1 : null),
+      icr: x.int > 0 ? ebit / x.int : null,
+      gm: pct(div(gp, x.rev)), om: pct(div(ebit, x.rev)), nm: pct(div(ni, x.rev)),
+      roe: eq > 0 ? pct(ni / eq) : null, roa: pct(div(ni, ta)),
+      dso, dio, ccc: (dso != null && dio != null && dpo != null) ? dso + dio - dpo : null,
+      ato: div(x.rev, ta),
+      ocfni: ni > 0 ? x.ocf / ni : null,
+      ocfm: pct(div(x.ocf, x.rev)), fcfm: pct(div(x.ocf - x.capex, x.rev)),
+      revg: x.prev > 0 ? pct((x.rev - x.prev) / x.prev) : null,
+      nig: x.pni !== 0 ? pct((ni - x.pni) / Math.abs(x.pni)) : null,
+    };
+    // special-case notes
+    const notes = {};
+    if (x.int <= 0) notes.icr = "無利息負擔";
+    if (ebitda <= 0 && debt - x.cash > 0) notes.nde = "EBITDA ≤ 0，無法以獲利還債";
+    else if (debt - x.cash <= 0) notes.nde = "淨現金部位（現金大於借款）";
+    if (eq <= 0) notes.roe = "股東權益為負，已資不抵債";
+    if (ni <= 0) notes.ocfni = "本期未獲利，改看營業現金流量率";
+    const forced = {};
+    if (x.int <= 0) forced.icr = "good";
+    if (ebitda <= 0 && debt - x.cash > 0) forced.nde = "risk";
+    if (eq <= 0 && ta > 0) forced.roe = "risk";
+
+    // Altman Z'' (non-manufacturer / emerging market, book equity)
+    const z = (ta > 0 && tl > 0) ? 6.56 * (ca - cl) / ta + 3.26 * x.re / ta + 6.72 * ebit / ta + 1.05 * eq / tl : null;
+
+    return { v, notes, forced, z, d: { gp, ebit, ebitda, ni, ca, ta, cl, tl, eq, debt, dpo } };
+  }
+
+  function rate(m, val, forced) {
+    if (forced) return forced;
+    if (val == null) return "na";
+    if (m.dir === 1) return val >= m.good ? "good" : val >= m.warn ? "warn" : "risk";
+    return val <= m.good ? "good" : val <= m.warn ? "warn" : "risk";
+  }
+  const PTS = { good: 100, warn: 50, risk: 0 };
+  const LABEL = { good: "正常", warn: "留意", risk: "異常", na: "不適用" };
+
+  function fmtVal(m, v) {
+    if (v == null) return "—";
+    if (m.u === "%") return fmt(v, 1) + "%";
+    if (m.u === "天") return fmt(v, 0) + " 天";
+    if (m.u === "月") return fmt(v, 1) + " 月";
+    return fmt(v, 2) + "×";
+  }
+  function refText(m) {
+    const s = m.u === "%" ? "%" : m.u === "x" ? "×" : " " + m.u;
+    return m.dir === 1 ? `≥ ${m.good}${s}` : `≤ ${m.good}${s}`;
+  }
+
+  function barHTML(m, v) {
+    const span = m.hi - m.lo;
+    const p = (t) => Math.max(0, Math.min(100, (t - m.lo) / span * 100));
+    const a = p(Math.min(m.good, m.warn)), b = p(Math.max(m.good, m.warn));
+    const cols = m.dir === 1 ? ["var(--risk-soft)", "var(--warn-soft)", "var(--good-soft)"] : ["var(--good-soft)", "var(--warn-soft)", "var(--risk-soft)"];
+    const mark = v == null ? "" : `<b style="left:calc(${p(v)}% - 1.5px)"></b>`;
+    return `<div class="barbox"><div class="bar"><i style="width:${a}%;background:${cols[0]}"></i><i style="width:${b - a}%;background:${cols[1]}"></i><i style="width:${100 - b}%;background:${cols[2]}"></i></div>${mark}</div>`;
+  }
+
+  function gradeOf(s) {
+    if (s >= 80) return { l: "A", t: "財務健康", c: "good", d: "各構面大多在正常範圍，維持目前的紀律，持續追蹤趨勢即可。" };
+    if (s >= 65) return { l: "B", t: "大致穩健，有改善空間", c: "good", d: "體質不錯，但有幾項指標需要留意，建議排入下季改善計畫。" };
+    if (s >= 50) return { l: "C", t: "需要關注", c: "warn", d: "多項指標落在留意或異常區，問題還來得及處理，但需要指定負責人並按月追蹤。" };
+    if (s >= 35) return { l: "D", t: "警戒", c: "risk", d: "流動性或現金流出現明顯壓力，建議立刻啟動現金管理並和往來銀行溝通。" };
+    return { l: "E", t: "高風險", c: "risk", d: "多數指標異常，有資金斷鏈風險。請優先確保 13 週內的現金收支，再談獲利改善。" };
+  }
+
+  function radar(dimScores) {
+    const cx = 130, cy = 118, R = 82, n = dimScores.length;
+    const pt = (i, r) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+    let s = "";
+    [25, 50, 75, 100].forEach(g => {
+      s += `<polygon points="${dimScores.map((_, i) => pt(i, R * g / 100).join(",")).join(" ")}" fill="none" stroke="var(--line)" stroke-width="1"/>`;
+    });
+    dimScores.forEach((_, i) => { const [x, y] = pt(i, R); s += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--line)"/>`; });
+    const poly = dimScores.map((d, i) => pt(i, R * (d.score == null ? 0 : d.score) / 100).join(",")).join(" ");
+    s += `<polygon points="${poly}" fill="var(--accent)" fill-opacity=".18" stroke="var(--accent)" stroke-width="2"/>`;
+    dimScores.forEach((d, i) => {
+      const [x, y] = pt(i, R * (d.score == null ? 0 : d.score) / 100);
+      s += `<circle cx="${x}" cy="${y}" r="3" fill="var(--accent)"/>`;
+      const [lx, ly] = pt(i, R + 18);
+      const anchor = Math.abs(lx - cx) < 4 ? "middle" : lx > cx ? "start" : "end";
+      s += `<text x="${lx}" y="${ly + 4}" text-anchor="${anchor}" font-size="11" fill="var(--muted)" font-family="var(--f-body)">${d.name}</text>`;
+    });
+    $("radar").innerHTML = s;
+  }
+
+  function render() {
+    const x = read();
+    const r = compute(x);
+    const d = r.d;
+    $("d-ebit").textContent = fmt(d.ebit);
+    $("d-ni").textContent = fmt(d.ni);
+    $("d-ta").textContent = fmt(d.ta);
+    $("d-tl").textContent = fmt(d.tl);
+    $("d-eq").textContent = fmt(d.eq);
+    const chk = $("check");
+    if (d.ta <= 0 || x.rev <= 0) { chk.className = "check bad"; chk.textContent = "請至少填入營業收入與資產項目，才能計算指標。"; }
+    else if (d.eq <= 0) { chk.className = "check bad"; chk.textContent = "負債大於資產：股東權益為負，屬於資不抵債。"; }
+    else { chk.className = "check ok"; chk.textContent = `資產 ${fmt(d.ta)} ＝ 負債 ${fmt(d.tl)} ＋ 權益 ${fmt(d.eq)}，平衡。`; }
+
+    const rows = METRICS.map(m => {
+      const val = r.v[m.id];
+      const st = rate(m, val, r.forced[m.id]);
+      return { m, val, st, note: r.notes[m.id] };
+    });
+
+    const dimScores = DIMS.map(dm => {
+      const rs = rows.filter(x => x.m.dim === dm.id && x.st !== "na");
+      const score = rs.length ? rs.reduce((a, b) => a + PTS[b.st], 0) / rs.length : null;
+      return { ...dm, score, rows: rows.filter(x => x.m.dim === dm.id) };
+    });
+    const valid = dimScores.filter(x => x.score != null);
+    const wsum = valid.reduce((a, b) => a + b.w, 0);
+    const total = wsum ? valid.reduce((a, b) => a + b.score * b.w, 0) / wsum : 0;
+    const g = gradeOf(total);
+
+    // grade ring
+    const C = 2 * Math.PI * 58, off = C * (1 - total / 100);
+    $("grade").innerHTML = `<svg viewBox="0 0 132 132"><circle cx="66" cy="66" r="58" fill="none" stroke="var(--soft)" stroke-width="10"/><circle cx="66" cy="66" r="58" fill="none" stroke="var(--${g.c})" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 66 66)"/></svg><div><div class="score">${fmt(total)}</div><div class="letter" style="color:var(--${g.c})">等級 ${g.l}</div></div>`;
+    $("verdict-title").textContent = g.t;
+    $("verdict-text").textContent = g.d;
+    const cnt = { good: 0, warn: 0, risk: 0, na: 0 };
+    rows.forEach(x => cnt[x.st]++);
+    $("counts").innerHTML = `<span class="pill good">正常 ${cnt.good}</span><span class="pill warn">留意 ${cnt.warn}</span><span class="pill risk">異常 ${cnt.risk}</span>` + (cnt.na ? `<span class="pill na">不適用 ${cnt.na}</span>` : "");
+    radar(dimScores);
+
+    $("dims").innerHTML = dimScores.map(dm => {
+      const c = dm.score == null ? "" : dm.score >= 70 ? "good" : dm.score >= 40 ? "warn" : "risk";
+      return `<div class="panel dim ${c}"><div class="eyebrow">權重 ${dm.w}%</div><h3>${dm.name}</h3><div class="s" style="color:var(--${c || "muted"})">${dm.score == null ? "—" : fmt(dm.score)}</div><div class="q">${dm.q}</div></div>`;
+    }).join("");
+
+    $("tbody").innerHTML = dimScores.map(dm => {
+      const head = `<tr class="grp"><td colspan="5">${dm.name} <span class="num">· ${dm.score == null ? "—" : fmt(dm.score)} 分</span></td></tr>`;
+      return head + dm.rows.map(({ m, val, st, note }) => `<tr>
+        <td><div>${m.name}</div><div class="f">${note ? note : m.f}</div></td>
+        <td class="val" style="color:var(--${st === "na" ? "muted" : st})">${fmtVal(m, val)}</td>
+        <td>${barHTML(m, val)}</td>
+        <td class="ref">${refText(m)}</td>
+        <td><span class="pill ${st}">${LABEL[st]}</span></td></tr>`).join("");
+    }).join("");
+
+    // priority actions: risk first, then warn; weight by dimension weight
+    const wOf = Object.fromEntries(DIMS.map(x => [x.id, x.w]));
+    const issues = rows.filter(x => x.st === "risk" || x.st === "warn")
+      .sort((a, b) => (PTS[a.st] - PTS[b.st]) || (wOf[b.m.dim] - wOf[a.m.dim]));
+    const top = issues.slice(0, 5);
+    $("actions").innerHTML = top.length ? top.map((x, i) => `<div class="act ${x.st}"><span class="n">${String(i + 1).padStart(2, "0")}</span><div><strong>${x.m.name}</strong> <span class="pill ${x.st}">${fmtVal(x.m, x.val)} · ${LABEL[x.st]}</span><p>${x.m.fix}</p></div></div>`).join("")
+      : `<p class="muted" style="margin:0">沒有需要改善的指標。</p>`;
+    const goods = rows.filter(x => x.st === "good");
+    $("strengths").innerHTML = goods.length ? goods.map(x => `<span class="pill good">${x.m.name} ${fmtVal(x.m, x.val)}</span>`).join("") : `<span class="muted">目前沒有落在正常範圍的指標。</span>`;
+
+    // DuPont
+    const nmv = div(d.ni, x.rev), atov = div(x.rev, d.ta), lev = d.eq > 0 ? d.ta / d.eq : null;
+    const roev = (nmv != null && atov != null && lev != null) ? nmv * atov * lev : null;
+    const box = (t, v, main) => `<div class="box${main ? " main" : ""}"><div class="eyebrow">${t}</div><div class="v">${v}</div></div>`;
+    $("dupont").innerHTML = box("ROE", roev == null ? "—" : fmt(roev * 100, 1) + "%", true) + `<span class="op">＝</span>` +
+      box("淨利率", nmv == null ? "—" : fmt(nmv * 100, 1) + "%") + `<span class="op">×</span>` +
+      box("資產週轉", atov == null ? "—" : fmt(atov, 2) + "×") + `<span class="op">×</span>` +
+      box("權益乘數", lev == null ? "—" : fmt(lev, 2) + "×");
+    let dn = "";
+    if (roev != null) {
+      const parts = [];
+      if (nmv < 0.05) parts.push("淨利率偏低（低於 5%）");
+      if (atov < 1) parts.push("資產週轉偏慢（低於 1 次）");
+      if (lev > 2.5) parts.push("權益乘數偏高，ROE 有一部分是靠借錢撐起來的");
+      dn = parts.length ? "拖累或風險來源：" + parts.join("；") + "。" : "三個因子都在合理區間。";
+    }
+    $("dupont-note").textContent = dn;
+
+    // Altman
+    const z = r.z;
+    let zn = "資料不足。", zpos = 0;
+    if (z != null) {
+      zpos = Math.max(0, Math.min(100, z / 5 * 100));
+      zn = z > 2.6 ? `Z″ = ${fmt(z, 2)}，落在安全區（> 2.6），短期內財務危機機率低。`
+        : z >= 1.1 ? `Z″ = ${fmt(z, 2)}，落在灰色區（1.1–2.6），需持續觀察營運資金與獲利。`
+        : `Z″ = ${fmt(z, 2)}，落在危險區（< 1.1），歷史上此區企業兩年內陷入財務危機的比例明顯偏高。`;
+    }
+    const zm = $("zmark");
+    zm.style.left = zpos + "%";
+    zm.textContent = z == null ? "—" : fmt(z, 2);
+    $("z-note").textContent = zn;
+
+    // text summary
+    const co = $("m-co").value, per = $("m-period").value;
+    let txt = `【${co}　${per}　財務健檢】\n綜合分數 ${fmt(total)}／100，等級 ${g.l}（${g.t}）\n`;
+    txt += dimScores.map(dm => `・${dm.name}：${dm.score == null ? "—" : fmt(dm.score)} 分`).join("\n") + "\n";
+    txt += `Altman Z″：${z == null ? "—" : fmt(z, 2)}\n\n優先改善：\n`;
+    txt += top.length ? top.map((x, i) => `${i + 1}. ${x.m.name} ${fmtVal(x.m, x.val)}（${LABEL[x.st]}）— ${x.m.fix}`).join("\n") : "無";
+    $("copybox").value = txt;
+
+    const isSample = FIELDS.every(k => num($(k).value) === SAMPLE[k]);
+    $("sample-note").hidden = !isSample;
+    save();
+  }
+
+  function save() {
+    try {
+      const o = { meta: { co: $("m-co").value, period: $("m-period").value } };
+      FIELDS.forEach(k => o[k] = $(k).value);
+      localStorage.setItem(KEY, JSON.stringify(o));
+    } catch (e) {}
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return false;
+      const o = JSON.parse(raw);
+      FIELDS.forEach(k => $(k).value = o[k] ?? "");
+      if (o.meta) { $("m-co").value = o.meta.co || ""; $("m-period").value = o.meta.period || ""; }
+      return true;
+    } catch (e) { return false; }
+  }
+  function toast(t) { const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 1800); }
+
+  FIELDS.forEach(k => {
+    const el = $(k);
+    el.addEventListener("input", render);
+    el.addEventListener("blur", () => { if (el.value.trim() !== "") el.value = fmt(num(el.value)); });
+  });
+  ["m-co", "m-period"].forEach(k => $(k).addEventListener("input", render));
+  $("form").addEventListener("submit", e => e.preventDefault());
+  $("btn-sample").addEventListener("click", () => { write(SAMPLE); $("m-co").value = META_SAMPLE.co; $("m-period").value = META_SAMPLE.period; render(); toast("已載入範例數字"); });
+  $("btn-clear").addEventListener("click", () => { FIELDS.forEach(k => $(k).value = ""); $("m-co").value = ""; render(); $("rev").focus(); });
+  $("btn-copy").addEventListener("click", () => {
+    const t = $("copybox").value;
+    try {
+      navigator.clipboard.writeText(t).then(() => toast("已複製摘要"), () => { $("copybox").select(); toast("請按 Ctrl/⌘ + C 複製"); });
+    } catch (e) { $("copybox").select(); toast("請按 Ctrl/⌘ + C 複製"); }
+  });
+
+  if (!load()) write(SAMPLE);
+  render();
+})();
+</script>
