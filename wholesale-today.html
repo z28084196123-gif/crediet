@@ -1,0 +1,266 @@
+<title>批發商今日財務快篩</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@900&display=swap">
+<style>
+/* Layout: one quick form (what you can look up today) beside a traffic-light verdict; stacks on phones. */
+:root {
+  --bg: #f3f5f7; --paper: #ffffff; --ink: #17212b; --muted: #5d6b78; --line: #d9e0e6; --soft: #eaeef2;
+  --accent: #1d5b8f; --accent-soft: #e3edf6;
+  --good: #23824f; --good-soft: #e2f2e8; --warn: #b26a00; --warn-soft: #fbefd9; --risk: #c2362f; --risk-soft: #fbe3e1;
+  --f-display: "Noto Serif TC", "Songti TC", serif;
+  --f-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --paper: #161e26; --ink: #e4eaf0; --muted: #93a2b0; --line: #2a3642; --soft: #1d2731;
+    --accent: #6fa8dc; --accent-soft: #1a2d40;
+    --good: #5cc48a; --good-soft: #15301f; --warn: #e6a23c; --warn-soft: #33270f; --risk: #f07068; --risk-soft: #3a1a18;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --paper: #161e26; --ink: #e4eaf0; --muted: #93a2b0; --line: #2a3642; --soft: #1d2731;
+  --accent: #6fa8dc; --accent-soft: #1a2d40;
+  --good: #5cc48a; --good-soft: #15301f; --warn: #e6a23c; --warn-soft: #33270f; --risk: #f07068; --risk-soft: #3a1a18;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 20px; }
+h1, h2 { margin: 0; text-wrap: balance; }
+h1 { font-family: var(--f-display); font-weight: 900; font-size: clamp(1.6rem, 4vw, 2.1rem); }
+h2 { font-size: 1.05rem; font-weight: 700; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: .74rem; letter-spacing: .12em; color: var(--muted); font-weight: 500; }
+header { border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
+.layout { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 820px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) 118px; gap: 8px; align-items: center; }
+.row label { font-size: .9rem; }
+.row label small { display: block; color: var(--muted); font-size: .72rem; line-height: 1.3; }
+.row input { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: .95rem; text-align: right; width: 100%;
+  padding: 7px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); }
+.row input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.grp { font-size: .78rem; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-top: 4px; }
+.note { font-size: .8rem; background: var(--warn-soft); color: var(--warn); padding: 6px 10px; border-radius: 4px; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+button { font: inherit; font-size: .85rem; padding: 7px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; }
+button:hover { border-color: var(--accent); color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.results { display: grid; gap: 20px; min-width: 0; }
+.verdict { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; }
+.light { width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 900; font-size: 1.5rem; color: var(--paper); }
+.verdict h2 { font-family: var(--f-display); font-size: 1.5rem; font-weight: 900; }
+.verdict p { margin: 4px 0 0; }
+@media (max-width: 560px) { .light { width: 60px; height: 60px; font-size: 1.15rem; } .verdict h2 { font-size: 1.25rem; } }
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .kpis { grid-template-columns: minmax(0, 1fr); } }
+.kpi { padding: 12px 14px; border-radius: 4px; background: var(--bg); }
+.kpi .v { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: 1.35rem; font-weight: 600; }
+.kpi .l { font-size: .8rem; color: var(--muted); }
+.list { display: grid; }
+.item { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.item:last-child { border-bottom: none; }
+.dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 6px; }
+.dot.good { background: var(--good); } .dot.warn { background: var(--warn); } .dot.risk { background: var(--risk); } .dot.na { background: var(--line); }
+.item .n { font-weight: 500; }
+.item .q { font-size: .8rem; color: var(--muted); }
+.item .fix { font-size: .85rem; margin-top: 4px; padding: 6px 10px; border-radius: 4px; background: var(--bg); }
+.item .val { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; white-space: nowrap; }
+.item .val small { display: block; font-weight: 400; font-size: .72rem; color: var(--muted); }
+.c-good { color: var(--good); } .c-warn { color: var(--warn); } .c-risk { color: var(--risk); } .c-na { color: var(--muted); }
+.foot { font-size: .78rem; color: var(--muted); }
+textarea { width: 100%; height: 110px; font-family: var(--f-num); font-size: .78rem; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 16px; border-radius: 4px; font-size: .85rem; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">批發業 · 今日快篩 · 單位：萬元</div>
+    <h1>批發商今日財務快篩</h1>
+    <p>不用等年報。打開銀行帳戶、應收應付帳和庫存表，填 10 個數字，馬上知道今天的資金狀況。</p>
+  </header>
+
+  <div class="layout">
+    <form class="card" id="form" autocomplete="off">
+      <div class="btns" style="justify-content:space-between;align-items:center">
+        <h2>今天的數字</h2>
+        <div class="btns"><button type="button" id="b-sample">範例</button><button type="button" id="b-clear">清空</button></div>
+      </div>
+      <div class="note" id="note">目前是虛構範例，請換成你的數字。輸入會存在這台裝置。</div>
+
+      <div class="grp">手上有的</div>
+      <div class="row"><label for="cash">現金＋銀行存款</label><input id="cash" inputmode="decimal"></div>
+      <div class="row"><label for="ar">客戶還欠你的<small>應收帳款＋未兌現票據</small></label><input id="ar" inputmode="decimal"></div>
+      <div class="row"><label for="ar90">其中拖欠超過 90 天<small>不知道可留空</small></label><input id="ar90" inputmode="decimal"></div>
+      <div class="row"><label for="inv">倉庫庫存<small>用進貨成本算</small></label><input id="inv" inputmode="decimal"></div>
+      <div class="row"><label for="dead">其中半年沒動的貨<small>不知道可留空</small></label><input id="dead" inputmode="decimal"></div>
+
+      <div class="grp">欠別人的</div>
+      <div class="row"><label for="ap">還沒付給供應商的<small>應付帳款＋開出未兌現票據</small></label><input id="ap" inputmode="decimal"></div>
+      <div class="row"><label for="loan">銀行借款餘額</label><input id="loan" inputmode="decimal"></div>
+
+      <div class="grp">每個月的生意</div>
+      <div class="row"><label for="sales">平均每月營業額<small>近 3 個月平均</small></label><input id="sales" inputmode="decimal"></div>
+      <div class="row"><label for="gm">平均毛利率 %<small>（售價 − 進價）÷ 售價</small></label><input id="gm" inputmode="decimal"></div>
+      <div class="row"><label for="fixed">每月固定開銷<small>薪水、租金、運費、利息、雜支</small></label><input id="fixed" inputmode="decimal"></div>
+    </form>
+
+    <main class="results">
+      <section class="card verdict" aria-live="polite">
+        <div class="light" id="light">—</div>
+        <div><div class="eyebrow">今天的結論</div><h2 id="v-title">—</h2><p id="v-text" class="muted"></p></div>
+      </section>
+
+      <section class="card">
+        <div class="kpis">
+          <div class="kpi"><div class="l">每月實際賺</div><div class="v" id="k-profit">—</div></div>
+          <div class="kpi"><div class="l">每月至少要做到</div><div class="v" id="k-be">—</div></div>
+          <div class="kpi"><div class="l">被應收和庫存綁住的錢</div><div class="v" id="k-wc">—</div></div>
+        </div>
+        <p class="foot" style="margin:0" id="k-note"></p>
+      </section>
+
+      <section class="card">
+        <h2>八個燈號</h2>
+        <div class="list" id="list"></div>
+      </section>
+
+      <section class="card">
+        <div class="btns" style="justify-content:space-between;align-items:center"><h2>複製給會計或老闆</h2><button type="button" id="b-copy">複製摘要</button></div>
+        <textarea id="copy" readonly aria-label="摘要文字"></textarea>
+      </section>
+
+      <p class="foot">標準是一般批發業的經驗值，只能當初步參考。毛利率低的批發（例如 3C、食品原料）利潤率天生較薄，重點會更偏向收款和庫存周轉。建議每月同一天填一次，看趨勢比看單次數字更準。</p>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+  const F = ["cash","ar","ar90","inv","dead","ap","loan","sales","gm","fixed"];
+  const OPTIONAL = { ar90: 1, dead: 1 };
+  const SAMPLE = { cash:120, ar:380, ar90:40, inv:450, dead:60, ap:260, loan:200, sales:300, gm:15, fixed:32 };
+  const KEY = "wholesale-today-v1";
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n, d = 0) => (n == null || !isFinite(n)) ? "—" : n.toLocaleString("zh-TW", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const num = (v) => { const x = parseFloat(String(v).replace(/[,\s%]/g, "")); return isFinite(x) ? x : null; };
+
+  function read() { const o = {}; F.forEach(k => o[k] = num($(k).value)); return o; }
+
+  // dir 1 = higher is better
+  const M = [
+    { id:"runway", n:"現金能撐幾個月", q:"現金 ÷ 每月固定開銷", u:"個月", d:1, dp:1, good:3, warn:1,
+      fix:"現金太薄。這週先列出未來 4 週每一筆要收、要付的錢；催收已到期的貨款，向銀行先談好備用額度。" },
+    { id:"pay", n:"短期付得出來嗎", q:"(現金 + 應收) ÷ (應付 + 借款)", u:"倍", d:1, dp:2, good:1.2, warn:1.0,
+      fix:"要靠賣庫存才還得起短期的債。暫緩大量進貨，先把庫存變現，借款到期前提早和銀行談展延。" },
+    { id:"margin", n:"每月營業利潤率", q:"(營業額 × 毛利率 − 固定開銷) ÷ 營業額", u:"%", d:1, dp:1, good:3, warn:0,
+      fix:"有在賣但沒賺到錢。找出毛利最低的 10 個品項或客戶，調價或停賣；檢查運費是否吃掉毛利。" },
+    { id:"safety", n:"離虧損還有多遠", q:"(營業額 − 損益兩平營業額) ÷ 營業額", u:"%", d:1, dp:0, good:20, warn:5,
+      fix:"營業額稍微下滑就會虧錢。固定開銷要往下壓，或優先推毛利較高的品項。" },
+    { id:"dso", n:"多久收到貨款", q:"應收 ÷ 每月營業額 × 30", u:"天", d:-1, dp:0, good:45, warn:75,
+      fix:"收款太慢，等於免費借錢給客戶。依帳齡列出前 10 大欠款客戶逐一催收；新單縮短票期，現金付款給小折扣。" },
+    { id:"dio", n:"貨放多久才賣掉", q:"庫存 ÷ 每月進貨成本 × 30", u:"天", d:-1, dp:0, good:45, warn:90,
+      fix:"庫存太多，錢壓在倉庫裡。按出貨量排出 ABC 類，C 類停止補貨；下單改小量多次。" },
+    { id:"ar90", n:"拖欠超過 90 天的比例", q:"逾期 90 天應收 ÷ 應收總額", u:"%", d:-1, dp:0, good:5, warn:15,
+      fix:"這部分很可能收不回來。對這些客戶停止出貨或改現金交易，必要時發存證信函，並預先估列損失。" },
+    { id:"dead", n:"呆滯庫存比例", q:"半年沒動的貨 ÷ 庫存總額", u:"%", d:-1, dp:0, good:5, warn:15,
+      fix:"呆貨每多放一個月就更不值錢。打折出清、退回供應商或搭售，把現金拿回來比帳面價值重要。" },
+  ];
+
+  function rate(m, v) {
+    if (v == null || !isFinite(v)) return "na";
+    return m.d === 1 ? (v >= m.good ? "good" : v >= m.warn ? "warn" : "risk") : (v <= m.good ? "good" : v <= m.warn ? "warn" : "risk");
+  }
+  const LBL = { good: "正常", warn: "留意", risk: "危險", na: "未填" };
+  const showV = (m, v) => v == null || !isFinite(v) ? "—" : fmt(v, m.dp) + (m.u === "%" ? "%" : " " + m.u);
+  const ref = (m) => (m.d === 1 ? "≥ " : "≤ ") + m.good + (m.u === "%" ? "%" : " " + m.u);
+
+  function render() {
+    const x = read(), z = (k) => x[k] ?? 0;
+    const gm = z("gm") / 100;
+    const cogsM = z("sales") * (1 - gm);
+    const profit = z("sales") * gm - z("fixed");
+    const be = gm > 0 ? z("fixed") / gm : null;
+    const wc = z("ar") + z("inv") - z("ap");
+    const dpo = cogsM > 0 ? z("ap") / cogsM * 30 : null;
+    const v = {
+      runway: z("fixed") > 0 ? z("cash") / z("fixed") : null,
+      pay: (z("ap") + z("loan")) > 0 ? (z("cash") + z("ar")) / (z("ap") + z("loan")) : null,
+      margin: z("sales") > 0 ? profit / z("sales") * 100 : null,
+      safety: (z("sales") > 0 && be != null) ? (z("sales") - be) / z("sales") * 100 : null,
+      dso: z("sales") > 0 ? z("ar") / z("sales") * 30 : null,
+      dio: cogsM > 0 ? z("inv") / cogsM * 30 : null,
+      ar90: (x.ar90 != null && z("ar") > 0) ? x.ar90 / z("ar") * 100 : null,
+      dead: (x.dead != null && z("inv") > 0) ? x.dead / z("inv") * 100 : null,
+    };
+    const rows = M.map(m => ({ m, v: v[m.id], s: rate(m, v[m.id]) }));
+    const cnt = { good: 0, warn: 0, risk: 0, na: 0 }; rows.forEach(r => cnt[r.s]++);
+    const cashRisk = rows.some(r => (r.m.id === "runway" || r.m.id === "pay") && r.s === "risk");
+
+    let L;
+    if (cnt.good + cnt.warn + cnt.risk === 0) L = { c: "na", t: "請填入數字", d: "至少填現金、應收、庫存、應付、每月營業額、毛利率和固定開銷。", s: "—" };
+    else if (cashRisk || cnt.risk >= 3) L = { c: "risk", t: "紅燈：資金吃緊", d: "現金或短期還款能力不足，先顧好未來 4 週的現金，其他改善之後再做。", s: "紅" };
+    else if (cnt.risk >= 1 || cnt.warn >= 3) L = { c: "warn", t: "黃燈：還撐得住，但要改善", d: "公司能正常運轉，但有錢卡在應收或庫存裡。照下面的建議，從紅燈項目先處理。", s: "黃" };
+    else L = { c: "good", t: "綠燈：狀況健康", d: "資金和獲利都在正常範圍，維持每月檢查一次就好。", s: "綠" };
+    const light = $("light");
+    light.textContent = L.s;
+    light.style.background = L.c === "na" ? "var(--line)" : `var(--${L.c})`;
+    $("v-title").textContent = L.t;
+    $("v-text").textContent = L.d + (L.c !== "na" ? `（正常 ${cnt.good}、留意 ${cnt.warn}、危險 ${cnt.risk}）` : "");
+
+    const pEl = $("k-profit");
+    pEl.textContent = z("sales") > 0 ? fmt(profit, 1) + " 萬" : "—";
+    pEl.className = "v " + (profit > 0 ? "c-good" : profit < 0 ? "c-risk" : "");
+    $("k-be").textContent = be != null ? fmt(be, 0) + " 萬" : "—";
+    $("k-wc").textContent = (z("ar") || z("inv")) ? fmt(wc, 0) + " 萬" : "—";
+    $("k-note").textContent = (be != null && z("sales") > 0)
+      ? `每月營業額低於 ${fmt(be, 0)} 萬就會虧錢。應收加庫存減掉應付，共有 ${fmt(wc, 0)} 萬元的資金卡在營運裡${dpo != null ? `；你平均 ${fmt(dpo, 0)} 天付款給供應商` : ""}。`
+      : "";
+
+    const order = { risk: 0, warn: 1, good: 2, na: 3 };
+    $("list").innerHTML = rows.slice().sort((a, b) => order[a.s] - order[b.s]).map(r => `
+      <div class="item"><span class="dot ${r.s}"></span>
+        <div><div class="n">${r.m.n}</div><div class="q">${r.m.q}・標準 ${ref(r.m)}</div>
+          ${r.s === "risk" || r.s === "warn" ? `<div class="fix">${r.m.fix}</div>` : ""}</div>
+        <div class="val c-${r.s}">${showV(r.m, r.v)}<small>${LBL[r.s]}</small></div></div>`).join("");
+
+    let t = `【今日財務快篩】${L.t}\n每月實際賺 ${fmt(profit, 1)} 萬；損益兩平營業額 ${be != null ? fmt(be, 0) : "—"} 萬；卡在營運的資金 ${fmt(wc, 0)} 萬\n`;
+    t += rows.slice().sort((a, b) => order[a.s] - order[b.s]).map(r => `${LBL[r.s]}｜${r.m.n}：${showV(r.m, r.v)}（標準 ${ref(r.m)}）`).join("\n");
+    $("copy").value = t;
+
+    $("note").hidden = !F.every(k => x[k] === SAMPLE[k]);
+    try { const o = {}; F.forEach(k => o[k] = $(k).value); localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {}
+  }
+
+  function fill(o) { F.forEach(k => $(k).value = o[k] == null ? "" : fmt(o[k], k === "gm" ? 1 : 0).replace(/\.0$/, "")); }
+  function toast(s) { const el = $("toast"); el.textContent = s; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 1800); }
+
+  F.forEach(k => {
+    $(k).addEventListener("input", render);
+    $(k).addEventListener("blur", () => { const n = num($(k).value); if (n != null) $(k).value = fmt(n, k === "gm" ? 1 : 0).replace(/\.0$/, ""); });
+  });
+  $("form").addEventListener("submit", e => e.preventDefault());
+  $("b-sample").addEventListener("click", () => { fill(SAMPLE); render(); toast("已載入範例"); });
+  $("b-clear").addEventListener("click", () => { F.forEach(k => $(k).value = ""); render(); $("cash").focus(); });
+  $("b-copy").addEventListener("click", () => {
+    const t = $("copy").value;
+    try { navigator.clipboard.writeText(t).then(() => toast("已複製"), () => { $("copy").select(); toast("請按 Ctrl/⌘ + C 複製"); }); }
+    catch (e) { $("copy").select(); toast("請按 Ctrl/⌘ + C 複製"); }
+  });
+
+  let loaded = false;
+  try { const raw = localStorage.getItem(KEY); if (raw) { const o = JSON.parse(raw); F.forEach(k => $(k).value = o[k] ?? ""); loaded = true; } } catch (e) {}
+  if (!loaded) fill(SAMPLE);
+  render();
+})();
+</script>
