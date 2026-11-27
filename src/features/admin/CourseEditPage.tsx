@@ -1,3 +1,4 @@
+import { ask } from '../../lib/confirm'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -36,7 +37,7 @@ function UnitEditor({ unit, onDone }: { unit: Partial<CourseUnit> & { course_id:
       <Field label="內容 / 說明"><Textarea rows={4} value={d.body ?? ''} onChange={(e) => setD({ ...d, body: e.target.value })} /></Field>
       <ErrorBox error={save.error ?? del.error} />
       <div className="flex justify-end gap-2">
-        {d.id && <Button variant="ghost" className="text-danger" onClick={() => confirm('刪除單元?') && del.mutate()}>刪除</Button>}
+        {d.id && <Button variant="ghost" className="text-danger" onClick={() => ask('刪除單元?') && del.mutate()}>刪除</Button>}
         <Button disabled={!d.title || save.isPending} onClick={() => save.mutate()}>{d.id ? '儲存' : '新增單元'}</Button>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { ask } from '../../lib/confirm'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, unwrap } from '../../lib/supabase'
@@ -51,7 +52,7 @@ function RequirementRow({ r, onSave, onDelete, busy }: { r: ReqDraft; onSave: (r
       <div className="flex items-center justify-between">
         <Checkbox label="啟用" checked={d.is_active} onChange={(v) => setD({ ...d, is_active: v })} />
         <div className="flex gap-2">
-          {onDelete && <Button variant="ghost" className="text-danger" disabled={busy} onClick={() => confirm('刪除此條件?') && onDelete()}>刪除</Button>}
+          {onDelete && <Button variant="ghost" className="text-danger" disabled={busy} onClick={() => ask('刪除此條件?') && onDelete()}>刪除</Button>}
           <Button disabled={!dirty || busy} onClick={() => onSave(d)}>{r.id ? '儲存' : '新增'}</Button>
         </div>
       </div>

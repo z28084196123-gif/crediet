@@ -1,3 +1,4 @@
+import { ask } from '../../lib/confirm'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, unwrap, unwrapMaybe } from '../../lib/supabase'
@@ -74,7 +75,7 @@ export default function PromotionQueuePage() {
                     <Input placeholder={staff ? '委員會意見' : '推薦意見'} value={comments[r.id] ?? ''}
                       onChange={(e) => setComments({ ...comments, [r.id]: e.target.value })} />
                     <div className="grid grid-cols-2 gap-2">
-                      <Button variant="secondary" disabled={act.isPending} onClick={() => confirm('確定不通過?') && act.mutate({ r, ok: false })}>不通過</Button>
+                      <Button variant="secondary" disabled={act.isPending} onClick={() => ask('確定不通過?') && act.mutate({ r, ok: false })}>不通過</Button>
                       <Button disabled={act.isPending} onClick={() => act.mutate({ r, ok: true })}>{staff ? '核可晉升' : '推薦'}</Button>
                     </div>
                   </div>

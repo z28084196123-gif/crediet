@@ -1,3 +1,4 @@
+import { ask } from '../../lib/confirm'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, unwrap } from '../../lib/supabase'
@@ -42,7 +43,7 @@ export default function HoursReviewPage() {
   return (
     <>
       <PageHeader title="時數簽核" subtitle="名下技師送出的實作時數"
-        action={(pending.data?.length ?? 0) > 1 && <Button variant="secondary" disabled={approveAll.isPending} onClick={() => confirm(`全部核准 ${pending.data!.length} 筆?`) && approveAll.mutate()}>全部核准</Button>} />
+        action={(pending.data?.length ?? 0) > 1 && <Button variant="secondary" disabled={approveAll.isPending} onClick={() => ask(`全部核准 ${pending.data!.length} 筆?`) && approveAll.mutate()}>全部核准</Button>} />
       <ErrorBox error={review.error ?? approveAll.error} />
       {pending.isLoading ? <Loading /> : pending.data?.length === 0 ? <Empty>目前沒有待簽核的時數 👍</Empty> : (
         <ul className="space-y-3">

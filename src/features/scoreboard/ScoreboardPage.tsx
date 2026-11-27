@@ -1,3 +1,4 @@
+import { ask } from '../../lib/confirm'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -79,7 +80,7 @@ export default function ScoreboardPage() {
         </div>
         {staff && (
           <Button variant="secondary" className="ml-auto" disabled={snapshot.isPending}
-            onClick={() => confirm(`結算 ${period.label} 計分板快照?(供獎金計算使用,可重新結算覆蓋)`) && snapshot.mutate()}>
+            onClick={() => ask(`結算 ${period.label} 計分板快照?(供獎金計算使用,可重新結算覆蓋)`) && snapshot.mutate()}>
             結算本期快照
           </Button>
         )}

@@ -1,3 +1,4 @@
+import { ask } from '../../lib/confirm'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -61,7 +62,7 @@ export default function MyPromotionPage() {
             <li key={r.id}>
               <PromotionCard req={r} levelName={levelName}>
                 {(r.status === 'submitted' || r.status === 'recommended') && (
-                  <Button variant="ghost" className="mt-2 px-0" onClick={() => confirm('確定撤回申請?') && withdraw.mutate(r.id)}>撤回申請</Button>
+                  <Button variant="ghost" className="mt-2 px-0" onClick={() => ask('確定撤回申請?') && withdraw.mutate(r.id)}>撤回申請</Button>
                 )}
               </PromotionCard>
             </li>

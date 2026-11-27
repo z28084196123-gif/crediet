@@ -42,7 +42,7 @@ function Guard({ roles, children }: { roles: AppRole[]; children: ReactElement }
 
 export default function App() {
   const { session, profile, loading } = useAuth()
-  if (loading) return <Loading />
+  if (loading) return <Loading text={import.meta.env.VITE_DEMO === '1' ? '正在瀏覽器裡建立示範資料庫,約需 5–15 秒…' : '載入中…'} />
   if (!session) {
     return (
       <Routes>

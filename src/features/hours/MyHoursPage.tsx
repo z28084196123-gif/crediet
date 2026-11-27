@@ -1,3 +1,4 @@
+import { ask } from '../../lib/confirm'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, unwrap } from '../../lib/supabase'
@@ -75,7 +76,7 @@ export default function MyHoursPage() {
                 <div className="mt-1 text-sm text-muted">{h.description}</div>
                 {h.review_note && <div className="mt-1 text-xs text-muted">督導備註:{h.review_note}</div>}
                 {h.status === 'pending' && (
-                  <button className="mt-1 text-xs text-danger" onClick={() => confirm('確定刪除這筆紀錄?') && remove.mutate(h.id)}>刪除</button>
+                  <button className="mt-1 text-xs text-danger" onClick={() => ask('確定刪除這筆紀錄?') && remove.mutate(h.id)}>刪除</button>
                 )}
               </Card>
             </li>

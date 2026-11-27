@@ -81,8 +81,8 @@ export function Checkbox({ label, checked, onChange }: { label: string; checked:
   )
 }
 
-export function Loading() {
-  return <div className="py-10 text-center text-sm text-muted">載入中…</div>
+export function Loading({ text = '載入中…' }: { text?: string }) {
+  return <div className="py-10 text-center text-sm text-muted">{text}</div>
 }
 
 export function ErrorBox({ error }: { error: unknown }) {
