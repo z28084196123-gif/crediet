@@ -5,6 +5,7 @@ export type RequirementType =
   | 'practice_hours'
   | 'course'
   | 'quiz_score'
+  | 'scenario'
   | 'case_count'
   | 'satisfaction_avg'
   | 'sop_avg'
@@ -38,6 +39,7 @@ export interface ProgressItem {
   window_days: number | null
   course_id: string | null
   quiz_id: string | null
+  scenario_id?: string | null
   met: boolean
 }
 
@@ -116,6 +118,7 @@ export interface LevelRequirement {
   threshold: number
   course_id: string | null
   quiz_id: string | null
+  scenario_id: string | null
   window_days: number | null
   label: string | null
   sort_order: number
@@ -219,5 +222,80 @@ export interface AuditEntry {
   record_id: string | null
   before: Record<string, unknown> | null
   after: Record<string, unknown> | null
+  created_at: string
+}
+
+export type EndingType = 'good' | 'ok' | 'bad'
+
+export interface Scenario {
+  id: string
+  title: string
+  description: string | null
+  category: string | null
+  start_scene_key: string
+  pass_score: number
+  sort_order: number
+  is_active: boolean
+}
+
+export interface ScenarioScene {
+  id: string
+  scenario_id: string
+  key: string
+  sort_order: number
+  location: string | null
+  speaker: string | null
+  line: string | null
+  narration: string | null
+  media_url: string | null
+  ending_type: EndingType | null
+  ending_summary: string | null
+  mentor_comment: string | null
+}
+
+export interface ScenarioChoice {
+  id: string
+  scene_id: string
+  label: string
+  next_scene_key: string
+  sort_order: number
+}
+
+export interface ChoiceResult {
+  points: number
+  feedback: string | null
+  sop_node_code: string | null
+  next_scene_key: string
+}
+
+export interface ScenarioPathStep {
+  scene_key: string
+  line: string | null
+  choice_id: string
+  choice: string
+  points: number
+  feedback: string | null
+  sop_node_code: string | null
+}
+
+export interface ScenarioResult {
+  score: number
+  passed: boolean
+  pass_score: number
+  ending: { key: string; type: EndingType; narration: string | null; summary: string | null; mentor_comment: string | null }
+  sop_scores: Record<string, number>
+  path: ScenarioPathStep[]
+}
+
+export interface ScenarioAttempt {
+  id: string
+  scenario_id: string
+  technician_id: string
+  path: ScenarioPathStep[]
+  ending_key: string
+  ending_type: EndingType
+  total_score: number
+  sop_scores: Record<string, number>
+  passed: boolean
   created_at: string
 }

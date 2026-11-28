@@ -9,7 +9,7 @@ const tableLabel: Record<string, string> = {
   career_levels: '職級', level_requirements: '晉升條件', courses: '課程', quizzes: '測驗',
   scoreboard_metrics: '計分指標', sop_nodes: 'SOP 節點', app_settings: '全域設定',
   promotion_requests: '晉升申請', level_history: '職級異動', practice_hours: '實作時數',
-  profiles: '人員', mentor_assignments: '督導對應', service_cases: '案件', scoreboard_snapshots: '計分板結算',
+  profiles: '人員', scenarios: '情境劇', mentor_assignments: '督導對應', service_cases: '案件', scoreboard_snapshots: '計分板結算',
 }
 const actionLabel: Record<string, string> = { insert: '新增', update: '修改', delete: '刪除', snapshot: '結算' }
 const IGNORED = new Set(['updated_at', 'created_at'])

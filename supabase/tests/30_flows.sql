@@ -12,13 +12,31 @@ create temp table quiz_keys as
   group by q.title, q.id;
 grant select on quiz_keys to authenticated;
 
+-- 測試用:每齣情境劇「每步都選最佳」的路徑,以及「第一步就選 0 分」的路徑
+create temp table best_paths as
+with recursive walk as (
+  select sc.id as scenario_id, sc.title, s.id as scene_id, array[]::uuid[] as ids, 0 as depth
+  from scenarios sc join scenario_scenes s on s.scenario_id = sc.id and s.key = sc.start_scene_key
+  union all
+  select w.scenario_id, w.title, ns.id, w.ids || c.id, w.depth + 1
+  from walk w
+  join scenario_choices c on c.scene_id = w.scene_id
+  join scenario_choice_keys k on k.choice_id = c.id and k.points = 3
+  join scenario_scenes ns on ns.scenario_id = w.scenario_id and ns.key = c.next_scene_key
+  where w.depth < 10
+)
+select distinct on (w.title) w.title, w.scenario_id, w.ids
+from walk w join scenario_scenes s on s.id = w.scene_id and s.ending_type is not null
+order by w.title, w.depth;
+grant select on best_paths to authenticated;
+
 set role authenticated;
 
 -- ① 學徒看得到自己的進度與下一級缺口
 select test_login(:t1);
 select test_assert(promotion_progress() -> 'current_level' ->> 'code' = 'apprentice', '學徒目前職級為學徒');
 select test_assert(promotion_progress() -> 'next_level' ->> 'code' = 'junior', '下一級為初階技師');
-select test_assert(jsonb_array_length(promotion_progress() -> 'requirements') = 5, '初階有 5 項條件');
+select test_assert(jsonb_array_length(promotion_progress() -> 'requirements') = 7, '初階有 7 項條件');
 select test_assert((promotion_progress() ->> 'eligible')::boolean = false, '尚未達標');
 
 -- ② 時數經督導簽核後才計入
@@ -44,6 +62,24 @@ select test_assert((submit_quiz((select quiz_id from quiz_keys where title = '�
 select test_assert((select count(*) from course_completions) = 1, '單元讀完 + 測驗及格 → 課程完成');
 select submit_quiz((select quiz_id from quiz_keys where title = '給排水測驗'), (select answers from quiz_keys where title = '給排水測驗'));
 select test_assert((select count(*) from course_completions) = 2, '給排水課程完成');
+
+-- ③-2 情境劇
+select test_assert((select count(*) from scenario_choice_keys) = 0, '技師看不到情境劇的計分');
+select test_assert((scenario_choice_result((select ids[1] from best_paths where title = '客戶嫌報價太貴')) ->> 'points')::int = 3, '選擇後回傳分數與講評');
+select test_expect_error($$select submit_scenario((select scenario_id from best_paths where title = '客戶嫌報價太貴'), (select array[ids[2]] from best_paths where title = '客戶嫌報價太貴'))$$, '路徑不合法(跳過起始場景)會被拒絕');
+select test_expect_error($$select submit_scenario((select scenario_id from best_paths where title = '客戶嫌報價太貴'), (select array[ids[1]] from best_paths where title = '客戶嫌報價太貴'))$$, '沒演到結局不能交');
+-- 走到最差結局:不及格且不計入晉升
+select test_assert((submit_scenario(
+  (select id from scenarios where title = '客戶嫌報價太貴'),
+  array[(select c.id from scenario_choices c join scenario_scenes s on s.id = c.scene_id join scenarios sc on sc.id = s.scenario_id
+         where sc.title = '客戶嫌報價太貴' and s.key = 'start' and c.label like '%2,500%'),
+        (select c.id from scenario_choices c join scenario_scenes s on s.id = c.scene_id join scenarios sc on sc.id = s.scenario_id
+         where sc.title = '客戶嫌報價太貴' and s.key = 'discount' and c.label like '%2,000 就%')]
+) ->> 'passed')::boolean = false, '走到 bad 結局不及格');
+select test_assert((select (r ->> 'current')::numeric from jsonb_array_elements(promotion_progress() -> 'requirements') r where r ->> 'label' like '%嫌報價%') = 0, 'bad 結局不計入晉升');
+select test_assert((submit_scenario((select scenario_id from best_paths where title = '客戶嫌報價太貴'), (select ids from best_paths where title = '客戶嫌報價太貴')) ->> 'score')::numeric = 100, '最佳路徑 100 分');
+select submit_scenario((select scenario_id from best_paths where title = '回修客訴'), (select ids from best_paths where title = '回修客訴'));
+select test_assert((select count(*) from scenario_attempts) = 3, '演出紀錄存檔');
 
 -- 案件 30 件(督導建立)
 select test_login(:m1);

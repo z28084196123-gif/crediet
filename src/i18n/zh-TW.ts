@@ -25,6 +25,7 @@ export const requirementTypeLabel: Record<RequirementType, string> = {
   practice_hours: '實作時數(小時)',
   course: '完成指定課程',
   quiz_score: '測驗最佳成績(分)',
+  scenario: '情境演練最佳成績(分)',
   case_count: '完工案件數',
   satisfaction_avg: '客戶滿意度平均(1–5)',
   sop_avg: 'SOP 平均分數(1–5)',
@@ -34,6 +35,7 @@ export const requirementUnit: Record<RequirementType, string> = {
   practice_hours: '小時',
   course: '',
   quiz_score: '分',
+  scenario: '分',
   case_count: '件',
   satisfaction_avg: '分',
   sop_avg: '分',
@@ -45,3 +47,7 @@ export const settingLabel: Record<string, string> = {
   sop_scorer_weights: 'SOP 評分者權重',
   scoreboard_period: '計分板預設期間',
 }
+
+export const endingLabel = { good: '好結局', ok: '普通結局', bad: '壞結局' } as const
+
+export const pointsLabel = ['錯誤', '不理想', '可接受', '最佳'] as const

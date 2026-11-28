@@ -11,6 +11,9 @@ import HoursReviewPage from './features/hours/HoursReviewPage'
 import CourseListPage from './features/courses/CourseListPage'
 import CoursePage from './features/courses/CoursePage'
 import QuizPage from './features/courses/QuizPage'
+import ScenarioPlayerPage from './features/scenarios/ScenarioPlayerPage'
+import ScenariosAdminPage from './features/admin/ScenariosAdminPage'
+import ScenarioEditPage from './features/admin/ScenarioEditPage'
 import MyPromotionPage from './features/promotion/MyPromotionPage'
 import PromotionQueuePage from './features/promotion/PromotionQueuePage'
 import CasesPage from './features/sop/CasesPage'
@@ -63,6 +66,7 @@ export default function App() {
         <Route path="courses" element={g(ALL, <CourseListPage />)} />
         <Route path="courses/:id" element={g(ALL, <CoursePage />)} />
         <Route path="quiz/:id" element={g(ALL, <QuizPage />)} />
+        <Route path="scenarios/:id" element={g(ALL, <ScenarioPlayerPage />)} />
         <Route path="promotion" element={g(ALL, <MyPromotionPage />)} />
         <Route path="scoreboard" element={g(ALL, <ScoreboardPage />)} />
         <Route path="cases" element={g(ALL, <CasesPage />)} />
@@ -78,6 +82,8 @@ export default function App() {
         <Route path="admin/courses" element={g(STAFF, <CoursesAdminPage />)} />
         <Route path="admin/courses/:id" element={g(STAFF, <CourseEditPage />)} />
         <Route path="admin/scoring" element={g(STAFF, <ScoringAdminPage />)} />
+        <Route path="admin/scenarios" element={g(STAFF, <ScenariosAdminPage />)} />
+        <Route path="admin/scenarios/:id" element={g(STAFF, <ScenarioEditPage />)} />
         <Route path="admin/audit" element={g(STAFF, <AuditLogPage />)} />
         <Route path="admin/users" element={g(ADMIN, <UsersAdminPage />)} />
         <Route path="admin/settings" element={g(ADMIN, <SettingsAdminPage />)} />

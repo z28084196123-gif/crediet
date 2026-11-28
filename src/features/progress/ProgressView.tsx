@@ -79,6 +79,7 @@ export default function ProgressView({ techId, showLinks = false }: { techId: st
                   <div className="mt-1 flex justify-between text-xs text-warn">
                     <span>{gapText(r)}</span>
                     {showLinks && r.course_id && <Link className="text-brand" to={`/courses/${r.course_id}`}>前往課程 →</Link>}
+                    {showLinks && r.scenario_id && <Link className="text-brand" to={`/scenarios/${r.scenario_id}`}>去演練 →</Link>}
                     {showLinks && r.req_type === 'practice_hours' && <Link className="text-brand" to="/hours">登錄時數 →</Link>}
                   </div>
                 )}

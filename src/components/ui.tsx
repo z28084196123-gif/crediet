@@ -54,7 +54,7 @@ export function Badge({ children, tone = 'neutral' }: { children: ReactNode; ton
     danger: 'bg-danger-soft text-danger',
     brand: 'bg-brand-soft text-brand',
   }
-  return <span className={cx('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', t[tone])}>{children}</span>
+  return <span className={cx('inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', t[tone])}>{children}</span>
 }
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {

@@ -68,6 +68,11 @@ insert into public.course_completions (technician_id, course_id)
 select t.id, c.id from public.courses c
 cross join (values ('00000000-0000-0000-0000-0000000000d2'::uuid), ('00000000-0000-0000-0000-0000000000d3'::uuid)) t(id);
 
+-- 小李、小黃已通過所有情境劇(以最佳結局紀錄)
+insert into public.scenario_attempts (scenario_id, technician_id, path, ending_key, ending_type, total_score, sop_scores, passed)
+select sc.id, t.id, '[]', 'end_good', 'good', 100, '{}', true from public.scenarios sc
+cross join (values ('00000000-0000-0000-0000-0000000000d2'::uuid), ('00000000-0000-0000-0000-0000000000d3'::uuid)) t(id);
+
 -- 小張已讀第一個單元
 insert into public.unit_progress (technician_id, unit_id)
 select '00000000-0000-0000-0000-0000000000d1', id from public.course_units order by sort_order limit 1;

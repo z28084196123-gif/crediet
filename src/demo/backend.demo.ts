@@ -310,10 +310,23 @@ function friendly(e: unknown): string {
   return msg
 }
 
+/** 函式參數型別(陣列參數要轉成 Postgres 陣列格式,其餘物件轉 JSON) */
+async function argTypes(fn: string): Promise<Record<string, string>> {
+  const rows = await meta<{ name: string; type: string }[]>(`args:${fn}`, `
+    select unnest(proargnames) as name, unnest(proargtypes::regtype[]::text[]) as type
+    from pg_proc where proname = $1 and pronamespace = 'public'::regnamespace`, [fn])
+  return Object.fromEntries(rows.map((r) => [r.name, r.type]))
+}
+
+function pgArray(v: unknown[]): string {
+  return `{${v.map((x) => (x === null ? 'NULL' : `"${String(x).replace(/["\\]/g, '\\$&')}"`)).join(',')}}`
+}
+
 async function rpc(fn: string, args: Record<string, unknown> = {}): Promise<Resp> {
   try {
     const entries = Object.entries(args).filter(([, v]) => v !== undefined)
-    const params = entries.map(([, v]) => toParam(v))
+    const types = await argTypes(fn)
+    const params = entries.map(([k, v]) => (Array.isArray(v) && types[k]?.endsWith('[]') ? pgArray(v) : toParam(v)))
     const call = `public.${q(fn)}(${entries.map(([k], i) => `${q(k)} => $${i + 1}`).join(', ')})`
     const sql = (await isSetReturning(fn))
       ? `select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) as r from ${call} t`

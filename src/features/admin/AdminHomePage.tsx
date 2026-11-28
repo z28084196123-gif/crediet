@@ -5,6 +5,7 @@ import { Card, PageHeader } from '../../components/ui'
 const items = [
   { to: '/admin/levels', title: '職級與晉升條件', desc: '四級職涯、各級時數/課程/測驗/案件/滿意度門檻' },
   { to: '/admin/courses', title: '課程與測驗', desc: '課程單元(文字/影片/圖片)、測驗題目與正解' },
+  { to: '/admin/scenarios', title: '情境劇', desc: '場景、對話、選項分支、每個選擇的分數與講評' },
   { to: '/admin/scoring', title: '計分板與 SOP', desc: '指標權重、換算區間、SOP 節點與評分項目' },
   { to: '/admin/users', title: '人員與督導', desc: '角色、督導對應、職級手動調整', adminOnly: true },
   { to: '/admin/settings', title: '全域設定', desc: '時數累計方式、晉升流程、評分者權重', adminOnly: true },

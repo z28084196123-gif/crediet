@@ -2,7 +2,7 @@ import { ask } from '../../lib/confirm'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, unwrap } from '../../lib/supabase'
-import { useCourses, useLevels, useQuizzes } from '../../lib/queries'
+import { useCourses, useLevels, useQuizzes, useScenarios } from '../../lib/queries'
 import type { CareerLevel, LevelRequirement, RequirementType } from '../../lib/types'
 import { requirementTypeLabel } from '../../i18n/zh-TW'
 import { Badge, Button, Card, Checkbox, ErrorBox, Field, Input, Loading, PageHeader, Select } from '../../components/ui'
@@ -13,12 +13,13 @@ function RequirementRow({ r, onSave, onDelete, busy }: { r: ReqDraft; onSave: (r
   const [d, setD] = useState<ReqDraft>(r)
   const courses = useCourses(true)
   const quizzes = useQuizzes()
+  const scenarios = useScenarios(true)
   const dirty = JSON.stringify(d) !== JSON.stringify(r)
   return (
     <div className="space-y-2 rounded-lg border border-line p-3">
       <div className="grid grid-cols-2 gap-2">
         <Field label="條件類型">
-          <Select value={d.req_type} onChange={(e) => setD({ ...d, req_type: e.target.value as RequirementType, course_id: null, quiz_id: null })}>
+          <Select value={d.req_type} onChange={(e) => setD({ ...d, req_type: e.target.value as RequirementType, course_id: null, quiz_id: null, scenario_id: null })}>
             {Object.entries(requirementTypeLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
         </Field>
@@ -33,6 +34,14 @@ function RequirementRow({ r, onSave, onDelete, busy }: { r: ReqDraft; onSave: (r
           <Field label="門檻"><Input type="number" step="any" value={d.threshold} onChange={(e) => setD({ ...d, threshold: Number(e.target.value) })} /></Field>
         )}
       </div>
+      {d.req_type === 'scenario' && (
+        <Field label="情境劇">
+          <Select value={d.scenario_id ?? ''} onChange={(e) => setD({ ...d, scenario_id: e.target.value || null })}>
+            <option value="">請選擇</option>
+            {scenarios.data?.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+          </Select>
+        </Field>
+      )}
       {d.req_type === 'quiz_score' && (
         <Field label="測驗">
           <Select value={d.quiz_id ?? ''} onChange={(e) => setD({ ...d, quiz_id: e.target.value || null })}>
@@ -80,6 +89,7 @@ function LevelCard({ level, reqs }: { level: CareerLevel; reqs: LevelRequirement
         level_id: r.level_id, req_type: r.req_type, threshold: r.threshold,
         course_id: r.req_type === 'course' ? r.course_id : null,
         quiz_id: r.req_type === 'quiz_score' ? r.quiz_id : null,
+        scenario_id: r.req_type === 'scenario' ? r.scenario_id : null,
         window_days: r.window_days, label: r.label, sort_order: r.sort_order, is_active: r.is_active,
       }
       return id ? unwrap(supabase.from('level_requirements').update(rest).eq('id', id))
@@ -117,7 +127,7 @@ function LevelCard({ level, reqs }: { level: CareerLevel; reqs: LevelRequirement
           ))}
           {adding ? (
             <RequirementRow busy={busy} onSave={(x) => saveReq.mutate(x)}
-              r={{ level_id: level.id, req_type: 'practice_hours', threshold: 100, course_id: null, quiz_id: null, window_days: null, label: null, sort_order: reqs.length + 1, is_active: true }} />
+              r={{ level_id: level.id, req_type: 'practice_hours', threshold: 100, course_id: null, quiz_id: null, scenario_id: null, window_days: null, label: null, sort_order: reqs.length + 1, is_active: true }} />
           ) : (
             <Button variant="ghost" onClick={() => setAdding(true)}>＋ 新增條件</Button>
           )}

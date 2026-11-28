@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase, unwrap } from './supabase'
-import type { CareerLevel, Course, Profile, PromotionProgress, Quiz, ScoreboardMetric, SopNode } from './types'
+import type { CareerLevel, Course, Profile, PromotionProgress, Quiz, Scenario, ScoreboardMetric, SopNode } from './types'
 
 export function useLevels() {
   return useQuery({
@@ -64,4 +64,15 @@ export function usePromotionProgress(techId: string | undefined) {
 
 export function nameMap(profiles: Profile[] | undefined): Record<string, string> {
   return Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name]))
+}
+
+export function useScenarios(includeInactive = false) {
+  return useQuery({
+    queryKey: ['scenarios', includeInactive],
+    queryFn: () => {
+      let q = supabase.from('scenarios').select('*').order('sort_order').order('title')
+      if (!includeInactive) q = q.eq('is_active', true)
+      return unwrap(q.returns<Scenario[]>())
+    },
+  })
 }

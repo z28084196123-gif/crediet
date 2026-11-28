@@ -26,7 +26,7 @@ export function gapText(item: ProgressItem): string {
   if (item.met) return '已達成'
   if (item.req_type === 'course') return '尚未完成課程'
   const unit = requirementUnit[item.req_type]
-  if (item.req_type === 'satisfaction_avg' || item.req_type === 'sop_avg' || item.req_type === 'quiz_score') {
+  if (item.req_type === 'satisfaction_avg' || item.req_type === 'sop_avg' || item.req_type === 'quiz_score' || item.req_type === 'scenario') {
     return `目前 ${formatNumber(item.current, 2)} ${unit},需達 ${formatNumber(item.threshold, 2)} ${unit}`
   }
   const diff = Number(item.threshold) - Number(item.current)

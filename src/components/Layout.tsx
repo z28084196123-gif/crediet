@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth, useMe } from '../lib/auth'
 import type { AppRole } from '../lib/types'
 import { roleLabel } from '../i18n/zh-TW'
@@ -44,7 +44,12 @@ export function homePath(role: AppRole): string {
 export default function Layout() {
   const me = useMe()
   const { signOut } = useAuth()
+  const navigate = useNavigate()
   const items = navByRole[me.role]
+  const logout = async () => {
+    navigate('/', { replace: true })
+    await signOut()
+  }
 
   return (
     <div className="min-h-dvh pb-20 md:pb-0">
@@ -61,7 +66,7 @@ export default function Layout() {
           </nav>
           <div className="flex items-center gap-2 text-sm">
             <span className="hidden text-muted sm:inline">{me.full_name}・{roleLabel[me.role]}</span>
-            <button onClick={signOut} className="rounded-lg px-2 py-1 text-muted hover:bg-subtle">登出</button>
+            <button onClick={logout} className="rounded-lg px-2 py-1 text-muted hover:bg-subtle">登出</button>
           </div>
         </div>
       </header>
