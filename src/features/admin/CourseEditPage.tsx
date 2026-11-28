@@ -44,7 +44,7 @@ function UnitEditor({ unit, onDone }: { unit: Partial<CourseUnit> & { course_id:
   )
 }
 
-interface QDraft { id?: string; prompt: string; options: string[]; correct_index: number }
+interface QDraft { id?: string; prompt: string; options: string[]; correct_index: number; explanation: string }
 
 function QuizEditor({ quiz, onDone }: { quiz: Quiz; onDone: () => void }) {
   const [q, setQ] = useState(quiz)
@@ -53,15 +53,18 @@ function QuizEditor({ quiz, onDone }: { quiz: Quiz; onDone: () => void }) {
     queryKey: ['quiz_questions_admin', quiz.id],
     queryFn: async () => {
       const qs = await unwrap(supabase.from('quiz_questions').select('*').eq('quiz_id', quiz.id).order('sort_order').order('id').returns<QuizQuestion[]>())
-      const keys = await unwrap(supabase.from('quiz_answer_keys').select('*').in('question_id', qs.map((x) => x.id)).returns<{ question_id: string; correct_index: number }[]>())
-      return qs.map((x) => ({ id: x.id, prompt: x.prompt, options: x.options, correct_index: keys.find((k) => k.question_id === x.id)?.correct_index ?? 0 }))
+      const keys = await unwrap(supabase.from('quiz_answer_keys').select('*').in('question_id', qs.map((x) => x.id)).returns<{ question_id: string; correct_index: number; explanation: string | null }[]>())
+      return qs.map((x) => {
+        const k = keys.find((y) => y.question_id === x.id)
+        return { id: x.id, prompt: x.prompt, options: x.options, correct_index: k?.correct_index ?? 0, explanation: k?.explanation ?? '' }
+      })
     },
   })
   useEffect(() => { if (questions.data) setDrafts(questions.data) }, [questions.data])
 
   const save = useMutation({
     mutationFn: async () => {
-      await unwrap(supabase.from('quizzes').update({ title: q.title, pass_score: q.pass_score, max_attempts: q.max_attempts, is_active: q.is_active }).eq('id', quiz.id))
+      await unwrap(supabase.from('quizzes').update({ title: q.title, pass_score: q.pass_score, max_attempts: q.max_attempts, reveal_answers: q.reveal_answers, is_active: q.is_active }).eq('id', quiz.id))
       const keep = drafts.filter((d) => d.id).map((d) => d.id!)
       const removed = (questions.data ?? []).filter((x) => !keep.includes(x.id!)).map((x) => x.id!)
       if (removed.length) await unwrap(supabase.from('quiz_questions').delete().in('id', removed))
@@ -73,7 +76,7 @@ function QuizEditor({ quiz, onDone }: { quiz: Quiz; onDone: () => void }) {
         const saved = d.id
           ? await unwrap(supabase.from('quiz_questions').update(row).eq('id', d.id).select('id').single<{ id: string }>())
           : await unwrap(supabase.from('quiz_questions').insert(row).select('id').single<{ id: string }>())
-        await unwrap(supabase.from('quiz_answer_keys').upsert({ question_id: saved.id, correct_index: d.correct_index }))
+        await unwrap(supabase.from('quiz_answer_keys').upsert({ question_id: saved.id, correct_index: d.correct_index, explanation: d.explanation.trim() || null }))
       }
     },
     onSuccess: () => { questions.refetch(); onDone() },
@@ -87,7 +90,10 @@ function QuizEditor({ quiz, onDone }: { quiz: Quiz; onDone: () => void }) {
         <Field label="及格分數"><Input type="number" min={0} max={100} value={q.pass_score} onChange={(e) => setQ({ ...q, pass_score: Number(e.target.value) })} /></Field>
         <Field label="作答次數上限" hint="空白 = 不限"><Input type="number" min={1} value={q.max_attempts ?? ''} onChange={(e) => setQ({ ...q, max_attempts: e.target.value ? Number(e.target.value) : null })} /></Field>
       </div>
-      <Checkbox label="啟用" checked={q.is_active} onChange={(v) => setQ({ ...q, is_active: v })} />
+      <div className="flex flex-wrap gap-x-6">
+        <Checkbox label="啟用" checked={q.is_active} onChange={(v) => setQ({ ...q, is_active: v })} />
+        <Checkbox label="交卷後顯示正解與解說" checked={q.reveal_answers} onChange={(v) => setQ({ ...q, reveal_answers: v })} />
+      </div>
       <ol className="mt-3 space-y-3">
         {drafts.map((d, i) => (
           <li key={d.id ?? `new-${i}`} className="space-y-2 rounded-lg border border-line p-3">
@@ -98,6 +104,7 @@ function QuizEditor({ quiz, onDone }: { quiz: Quiz; onDone: () => void }) {
                 <Input value={o} placeholder={`選項 ${oi + 1}`} onChange={(e) => upd(i, { options: d.options.map((x, k) => (k === oi ? e.target.value : x)) })} />
               </div>
             ))}
+            <Field label="解說(交卷後顯示)"><Textarea rows={2} value={d.explanation} onChange={(e) => upd(i, { explanation: e.target.value })} /></Field>
             <div className="flex justify-between text-sm">
               <button className="text-brand" onClick={() => upd(i, { options: [...d.options, ''] })}>＋ 選項</button>
               <button className="text-danger" onClick={() => setDrafts(drafts.filter((_, j) => j !== i))}>刪除此題</button>
@@ -108,7 +115,7 @@ function QuizEditor({ quiz, onDone }: { quiz: Quiz; onDone: () => void }) {
       <p className="mt-2 text-xs text-muted">圓點選取的選項即為正解;正解只有委員會/管理員看得到。</p>
       <ErrorBox error={save.error} />
       <div className="mt-3 flex justify-between">
-        <Button variant="ghost" onClick={() => setDrafts([...drafts, { prompt: '', options: ['', '', ''], correct_index: 0 }])}>＋ 新增題目</Button>
+        <Button variant="ghost" onClick={() => setDrafts([...drafts, { prompt: '', options: ['', '', '', ''], correct_index: 0, explanation: '' }])}>＋ 新增題目</Button>
         <Button disabled={save.isPending} onClick={() => save.mutate()}>儲存測驗</Button>
       </div>
     </Card>

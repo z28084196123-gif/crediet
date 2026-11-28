@@ -5,13 +5,20 @@
 \set c1 '''00000000-0000-0000-0000-0000000000c1'''
 \set a1 '''00000000-0000-0000-0000-0000000000a1'''
 
+-- 測試用:各測驗的正解陣列(以超級使用者身分先算好)
+create temp table quiz_keys as
+  select q.title, q.id as quiz_id, jsonb_agg(k.correct_index order by qq.sort_order, qq.id) as answers
+  from quizzes q join quiz_questions qq on qq.quiz_id = q.id join quiz_answer_keys k on k.question_id = qq.id
+  group by q.title, q.id;
+grant select on quiz_keys to authenticated;
+
 set role authenticated;
 
 -- ① 學徒看得到自己的進度與下一級缺口
 select test_login(:t1);
 select test_assert(promotion_progress() -> 'current_level' ->> 'code' = 'apprentice', '學徒目前職級為學徒');
 select test_assert(promotion_progress() -> 'next_level' ->> 'code' = 'junior', '下一級為初階技師');
-select test_assert(jsonb_array_length(promotion_progress() -> 'requirements') = 4, '初階有 4 項條件');
+select test_assert(jsonb_array_length(promotion_progress() -> 'requirements') = 5, '初階有 5 項條件');
 select test_assert((promotion_progress() ->> 'eligible')::boolean = false, '尚未達標');
 
 -- ② 時數經督導簽核後才計入
@@ -29,11 +36,14 @@ select test_assert((select (r ->> 'current')::numeric from jsonb_array_elements(
 -- ③ 課程與測驗
 select mark_unit_complete(id) from course_units;
 -- 答錯
-select test_assert((submit_quiz((select id from quizzes limit 1), '[0,0,0]') ->> 'passed')::boolean = false, '答錯不及格');
+select test_assert((submit_quiz((select quiz_id from quiz_keys where title = '用電安全測驗'), '[3,3,3,3,3,3,3,3]') ->> 'passed')::boolean = false, '答錯不及格');
 select test_assert((select count(*) from course_completions) = 0, '測驗未及格,課程不算完成');
+select test_assert((submit_quiz((select quiz_id from quiz_keys where title = '用電安全測驗'), '[3,3,3,3,3,3,3,3]') -> 'results' -> 0 ->> 'explanation') is not null, '交卷後回傳解說');
 -- 答對
-select test_assert((submit_quiz((select id from quizzes limit 1), '[1,1,1]') ->> 'score')::numeric = 100, '全對 100 分');
+select test_assert((submit_quiz((select quiz_id from quiz_keys where title = '用電安全測驗'), (select answers from quiz_keys where title = '用電安全測驗')) ->> 'score')::numeric = 100, '全對 100 分');
 select test_assert((select count(*) from course_completions) = 1, '單元讀完 + 測驗及格 → 課程完成');
+select submit_quiz((select quiz_id from quiz_keys where title = '給排水測驗'), (select answers from quiz_keys where title = '給排水測驗'));
+select test_assert((select count(*) from course_completions) = 2, '給排水課程完成');
 
 -- 案件 30 件(督導建立)
 select test_login(:m1);
@@ -99,8 +109,8 @@ select test_expect_error($$select create_scoreboard_snapshot(current_date - 60, 
 
 -- 測驗次數上限
 select test_login(:a1);
-update quizzes set max_attempts = 2;
+update quizzes set max_attempts = 3 where title = '用電安全測驗';
 select test_login(:t1);
-select test_expect_error($$select submit_quiz((select id from quizzes limit 1), '[1,1,1]')$$, '超過作答次數上限');
+select test_expect_error($$select submit_quiz((select quiz_id from quiz_keys where title = '用電安全測驗'), '[0,0,0,0,0,0,0,0]')$$, '超過作答次數上限');
 
 reset role;

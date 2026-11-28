@@ -46,7 +46,10 @@ export default function QuizPage() {
           <div className="text-4xl font-bold tabular-nums">{result.score} 分</div>
           <div className="mt-1">{result.passed ? <Badge tone="ok">及格 🎉</Badge> : <Badge tone="warn">未及格,再接再厲</Badge>}</div>
           <div className="mt-2 text-sm text-muted">答對 {result.correct} / {result.total} 題</div>
-          <Link to={`/courses/${quiz.course_id}`} className="mt-3 inline-block text-sm text-brand">回到課程 →</Link>
+          <div className="mt-3 flex justify-center gap-4 text-sm">
+            {!result.passed && <button className="text-brand" onClick={() => { setAnswers({}); submit.reset(); window.scrollTo(0, 0) }}>重新作答</button>}
+            <Link to={`/courses/${quiz.course_id}`} className="text-brand">回到課程 →</Link>
+          </div>
         </Card>
       )}
       <ol className="space-y-3">
@@ -57,15 +60,23 @@ export default function QuizPage() {
               <Card className={cx(r && (r.correct ? 'border-ok' : 'border-danger'))}>
                 <div className="mb-3 font-medium">{i + 1}. {q.prompt} {r && (r.correct ? '✅' : '❌')}</div>
                 <div className="space-y-2">
-                  {q.options.map((opt, oi) => (
-                    <label key={oi} className={cx('flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm',
-                      answers[q.id] === oi ? 'border-brand bg-brand-soft' : 'border-line')}>
-                      <input type="radio" name={q.id} className="size-4" disabled={Boolean(result)}
-                        checked={answers[q.id] === oi} onChange={() => setAnswers({ ...answers, [q.id]: oi })} />
-                      {opt}
-                    </label>
-                  ))}
+                  {q.options.map((opt, oi) => {
+                    const isAnswer = r?.correct_index === oi
+                    const isWrongPick = r && !r.correct && answers[q.id] === oi
+                    return (
+                      <label key={oi} className={cx('flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm',
+                        isAnswer ? 'border-ok bg-ok-soft' : isWrongPick ? 'border-danger bg-danger-soft' : answers[q.id] === oi ? 'border-brand bg-brand-soft' : 'border-line')}>
+                        <input type="radio" name={q.id} className="size-4 shrink-0" disabled={Boolean(result)}
+                          checked={answers[q.id] === oi} onChange={() => setAnswers({ ...answers, [q.id]: oi })} />
+                        <span className="flex-1">{opt}</span>
+                        {isAnswer && <span className="shrink-0 text-xs font-medium text-ok">正解</span>}
+                      </label>
+                    )
+                  })}
                 </div>
+                {r?.explanation && (
+                  <p className="mt-3 rounded-lg bg-subtle p-3 text-sm leading-relaxed"><b>解說:</b>{r.explanation}</p>
+                )}
               </Card>
             </li>
           )

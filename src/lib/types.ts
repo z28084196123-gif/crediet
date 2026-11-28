@@ -88,6 +88,7 @@ export interface Quiz {
   title: string
   pass_score: number
   max_attempts: number | null
+  reveal_answers: boolean
   is_active: boolean
 }
 
@@ -105,7 +106,7 @@ export interface QuizResult {
   pass_score: number
   correct: number
   total: number
-  results: { question_id: string; correct: boolean }[]
+  results: { question_id: string; correct: boolean; correct_index?: number; explanation?: string | null }[]
 }
 
 export interface LevelRequirement {

@@ -59,7 +59,10 @@ insert into public.unit_progress (technician_id, unit_id)
 select t.id, u.id from public.course_units u
 cross join (values ('00000000-0000-0000-0000-0000000000d2'::uuid), ('00000000-0000-0000-0000-0000000000d3'::uuid)) t(id);
 insert into public.quiz_attempts (quiz_id, technician_id, answers, score, passed)
-select q.id, t.id, '[1,1,1]', 100, true from public.quizzes q
+select q.id, t.id,
+       (select jsonb_agg(k.correct_index order by qq.sort_order, qq.id) from public.quiz_questions qq
+        join public.quiz_answer_keys k on k.question_id = qq.id where qq.quiz_id = q.id),
+       100, true from public.quizzes q
 cross join (values ('00000000-0000-0000-0000-0000000000d2'::uuid), ('00000000-0000-0000-0000-0000000000d3'::uuid)) t(id);
 insert into public.course_completions (technician_id, course_id)
 select t.id, c.id from public.courses c
